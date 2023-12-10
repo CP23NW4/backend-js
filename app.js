@@ -161,9 +161,7 @@ app.post('/strayAnimals', async (req, res) => {
       res.status(400).json({ message: 'Unable to create a new stray animal' });
     }
   });
-
-
-
+  
 // // PUT update a stray animal by ID
 app.put('/strayAnimals/:saId', async (req, res) => {
   try {
