@@ -105,6 +105,8 @@ const app = express();
 app.use(cors()) // Enable CORS for all routes
 app.use(express.json()); // Parse JSON requests
 
+const { body, validationResult } = require('express-validator');
+
 // MongoDB connection
 mongoose.connect('mongodb+srv://mnwadmin:meowandwoof@meowandwoof.gcedq3t.mongodb.net/meowandwoof', {
   useNewUrlParser: true,
@@ -131,8 +133,8 @@ const StrayAnimal = mongoose.model('StrayAnimal', strayAnimalSchema, 'strayAnima
 // Define route to get all stray animals
 app.get('/strayAnimals', async (req, res) => {
   try {
-    // Fetch all stray animals from MongoDB
-    const allStrayAnimals = await StrayAnimal.find();
+    // Fetch all stray animals from MongoDB, ordered by created time in descending order
+    const allStrayAnimals = await StrayAnimal.find().sort({ createdOn: -1 });
     res.json(allStrayAnimals);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -149,18 +151,51 @@ app.get('/strayAnimals/:saId', async (req, res) => {
   }
 });
 
-
-// // POST create a new stray animal
-app.post('/strayAnimals', async (req, res) => {
-  const newStrayAnimal = new StrayAnimal(req.body); // Use StrayAnimal model
-  try {
-      const savedStrayAnimal = await newStrayAnimal.save();
-      res.status(201).json(savedStrayAnimal);
-    } catch (err) {
-      res.status(400).json({ message: 'Unable to create a new stray animal' });
-    }
-  });
+// Validate function for creating a new stray animal
+const validateCreateStrayAnimal = [
+  body('name')
+    .not().isEmpty().withMessage('Name is empty')
+    .isLength({ min: 1, max: 20 }).withMessage('Name must be 1 to 20 characters')
+    .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/).withMessage('Name can only contain Thai and English letters, numbers, and spaces'),
   
+    body('picture'),
+
+    body('type')
+    .not().isEmpty().withMessage('Type is empty')
+    .isIn(['Dog', 'Cat']).withMessage('Type must be Dog or Cat')
+    .isLength({ max: 5 }).withMessage('Type is more than 5 characters'),
+
+    body('gender')
+    .not().isEmpty().withMessage('Gender is empty')
+    .isIn(['Male', 'Female']).withMessage('Gender must be Male or Female')
+    .isLength({ max: 6 }).withMessage('Gender is more than 6 characters'),
+
+    body('color')
+    .not().isEmpty().withMessage('Color is empty')
+    .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/).withMessage('Color can only contain Thai and English letters and spaces')
+    .custom(value => !/\d/.test(value)).withMessage('Color cannot contain numbers'),
+
+    body('description')
+    .isLength({ max: 500 }).withMessage('Description is more than 500 characters'),
+
+];
+
+// POST create a new stray animal with validation
+app.post('/strayAnimals', validateCreateStrayAnimal, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const newStrayAnimal = new StrayAnimal(req.body);
+  try {
+    const savedStrayAnimal = await newStrayAnimal.save();
+    res.status(201).json(savedStrayAnimal);
+  } catch (err) {
+    res.status(400).json({ message: 'Unable to create a new stray animal' });
+  }
+});
+
 // // PUT update a stray animal by ID
 app.put('/strayAnimals/:saId', async (req, res) => {
   try {
@@ -188,7 +223,6 @@ app.delete('/strayAnimals/:saId', async (req, res) => {
     res.status(500).json({ message: 'Error deleting stray animal' });
   }
 });
-
 
 // Start the server
 const PORT = process.env.PORT || 8090;
