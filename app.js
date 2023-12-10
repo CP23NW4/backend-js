@@ -127,7 +127,7 @@ const strayAnimalSchema = new mongoose.Schema({
 const StrayAnimal = mongoose.model('StrayAnimal', strayAnimalSchema, 'strayAnimals');
 
 // Define route to get all stray animals
-app.get('/api/strayAnimals', async (req, res) => {
+app.get('/strayAnimals', async (req, res) => {
   try {
     // Fetch all stray animals from MongoDB
     const allStrayAnimals = await StrayAnimal.find();
@@ -137,7 +137,7 @@ app.get('/api/strayAnimals', async (req, res) => {
   }
 });
 
-app.get('/api/strayAnimals/:saId', async (req, res) => {
+app.get('/strayAnimals/:saId', async (req, res) => {
   try {
     const strayAnimalbyId = await StrayAnimal.findById(req.params.saId);
     res.json(strayAnimalbyId);
