@@ -103,6 +103,7 @@ const cors = require('cors');
 // Create Express app
 const app = express();
 app.use(cors()) // Enable CORS for all routes
+app.use(express.json()); // Parse JSON requests
 
 // MongoDB connection
 mongoose.connect('mongodb+srv://mnwadmin:meowandwoof@meowandwoof.gcedq3t.mongodb.net/meowandwoof', {
@@ -126,6 +127,7 @@ const strayAnimalSchema = new mongoose.Schema({
 // Create a model based on the schema
 const StrayAnimal = mongoose.model('StrayAnimal', strayAnimalSchema, 'strayAnimals');
 
+
 // Define route to get all stray animals
 app.get('/strayAnimals', async (req, res) => {
   try {
@@ -137,6 +139,7 @@ app.get('/strayAnimals', async (req, res) => {
   }
 });
 
+// Get animal by ID
 app.get('/strayAnimals/:saId', async (req, res) => {
   try {
     const strayAnimalbyId = await StrayAnimal.findById(req.params.saId);
@@ -145,6 +148,49 @@ app.get('/strayAnimals/:saId', async (req, res) => {
     res.status(404).json({ message: 'Stray animal not found' });
   }
 });
+
+
+// // POST create a new stray animal
+app.post('/strayAnimals', async (req, res) => {
+  const newStrayAnimal = new StrayAnimal(req.body); // Use StrayAnimal model
+  try {
+      const savedStrayAnimal = await newStrayAnimal.save();
+      res.status(201).json(savedStrayAnimal);
+    } catch (err) {
+      res.status(400).json({ message: 'Unable to create a new stray animal' });
+    }
+  });
+
+
+
+// // PUT update a stray animal by ID
+app.put('/strayAnimals/:saId', async (req, res) => {
+  try {
+    const updatedStrayAnimal = await StrayAnimal.findByIdAndUpdate(req.params.saId, req.body, { new: true });
+    if (!updatedStrayAnimal) {
+      return res.status(404).json({ message: 'Stray animal not found' });
+    }
+    res.json(updatedStrayAnimal);
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating stray animal' });
+  }
+});
+
+// // DELETE a stray animal by ID
+app.delete('/strayAnimals/:saId', async (req, res) => {
+  try {
+    const deletedStrayAnimal = await StrayAnimal.findByIdAndDelete(req.params.saId);
+
+    if (!deletedStrayAnimal) {
+      return res.status(404).json({ message: 'Stray animal not found' });
+    }
+
+    res.json({ message: 'Stray animal deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting stray animal' });
+  }
+});
+
 
 // Start the server
 const PORT = process.env.PORT || 8090;
