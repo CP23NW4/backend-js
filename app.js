@@ -139,7 +139,6 @@ app.get('/strayAnimals', async (req, res) => {
   }
 });
 
-
 // Get animal by ID
 app.get('/strayAnimals/:saId', async (req, res) => {
   try {
