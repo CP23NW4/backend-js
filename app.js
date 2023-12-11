@@ -134,6 +134,9 @@ const strayAnimalSchema = new mongoose.Schema({
 // Create a model based on the schema
 const StrayAnimal = mongoose.model('StrayAnimal', strayAnimalSchema, 'strayAnimals');
 
+let newStrayAnimal;
+
+let savedStrayAnimal;
 
 // Serve the public directory for static files
 app.use(express.static(path.join(__dirname, '../frontend/public')));
@@ -257,14 +260,13 @@ async (req, res) => {
   
 
 
-  // const newStrayAnimal = new StrayAnimal(req.body);
-  const newStrayAnimal = new StrayAnimal({
+  newStrayAnimal = new StrayAnimal({
     ...req.body,
     createdOn: new Date(), // Automatically set the createdOn field to the current date and time
   });
 
   try {
-    const savedStrayAnimal = await newStrayAnimal.save();
+    savedStrayAnimal = await newStrayAnimal.save();
     res.status(201).json(savedStrayAnimal);
   } catch (err) {
     res.status(400).json({ message: 'Unable to create a new stray animal' });
@@ -279,8 +281,16 @@ app.post('/strayAnimals/upload', upload.single('picture'), async (req, res) => {
     }
     const filePath = '/images/' + req.file.filename;
     req.body.picture = filePath;
-    const newStrayAnimal = new StrayAnimal(req.body);
-    const savedStrayAnimal = await newStrayAnimal.save();
+
+    newStrayAnimal = new StrayAnimal(req.body);
+    savedStrayAnimal = await newStrayAnimal.save();
+    // const newStrayAnimal = new StrayAnimal(req.body);
+
+    // const newStrayAnimal = new StrayAnimal({
+    //   ...req.body,
+    //   createdOn: new Date(), // Automatically set the createdOn field to the current date and time
+    // });
+
     res.status(200).json(savedStrayAnimal);
   } catch (err) {
     res.status(500).json({ message: 'Error uploading image: ' + err.message });
