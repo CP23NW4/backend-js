@@ -100,6 +100,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
+const path = require('path');
+const multer = require('multer');
+
 // Create Express app
 const app = express();
 app.use(cors()) // Enable CORS for all routes
@@ -112,6 +115,7 @@ mongoose.connect('mongodb+srv://mnwadmin:meowandwoof@meowandwoof.gcedq3t.mongodb
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
+
 
 // Define Schema for Stray Animal
 const strayAnimalSchema = new mongoose.Schema({
@@ -126,9 +130,24 @@ const strayAnimalSchema = new mongoose.Schema({
   updatedOn: Date,
 });
 
+
 // Create a model based on the schema
 const StrayAnimal = mongoose.model('StrayAnimal', strayAnimalSchema, 'strayAnimals');
 
+
+// Serve the public directory for static files
+app.use(express.static(path.join(__dirname, '../frontend/public')));
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../frontend/public/images/'));
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
 
 // Define route to get all stray animals
 app.get('/strayAnimals', async (req, res) => {
@@ -151,20 +170,14 @@ app.get('/strayAnimals/:saId', async (req, res) => {
   }
 });
 
-// Validate function for creating a new stray animal
-// const validateCreateStrayAnimal = [
-
-
-// ];
-
-// POST create a new stray animal with validation
-app.post('/strayAnimals',
+// Validation middleware for creating a new stray animal
+const validateCreateStrayAnimal = [
   body('name')
-  // .not().isEmpty().withMessage('Name is empty')
-  .notEmpty().withMessage('Name is empty')
-  .isLength({ min: 1, max: 20 }).withMessage('Name must be 1 to 20 characters')
-  .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/).withMessage('Name can only contain Thai and English letters, numbers, and spaces'),
-  
+    .notEmpty().withMessage('Name is empty')
+    .isLength({ min: 1, max: 20 }).withMessage('Name must be 1 to 20 characters')
+    .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/).withMessage('Name can only contain Thai and English letters, numbers, and spaces'),
+
+     
   body('picture')
   .notEmpty().withMessage('Image is empty'),
   
@@ -189,14 +202,60 @@ app.post('/strayAnimals',
   body('description')
   .isLength({ max: 500 }).withMessage('Description is more than 500 characters'),
 
+  async (req, res, next) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      const errorMessages = errors.array().map(error => ({ errorMessages: error.msg }));
+      return res.status(400).json(errorMessages);
+    }
+
+    next();
+  },
+];
+
+// POST create a new stray animal with validation
+app.post('/strayAnimals', validateCreateStrayAnimal, 
+  // body('name')
+  // // .not().isEmpty().withMessage('Name is empty')
+  // .notEmpty().withMessage('Name is empty')
+  // .isLength({ min: 1, max: 20 }).withMessage('Name must be 1 to 20 characters')
+  // .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/).withMessage('Name can only contain Thai and English letters, numbers, and spaces'),
+  
+  // body('picture')
+  // .notEmpty().withMessage('Image is empty'),
+  
+  // body('type')
+  // // .not().isEmpty().withMessage('Type is empty')
+  // .notEmpty().withMessage('Type is empty')
+  // .isIn(['Dog', 'Cat']).withMessage('Type must be Dog or Cat')
+  // .isLength({ max: 5 }).withMessage('Type is more than 5 characters'),
+  
+  // body('gender')
+  // // .not().isEmpty().withMessage('Gender is empty')
+  // .notEmpty().withMessage('Gender is empty')
+  // .isIn(['Male', 'Female']).withMessage('Gender must be Male or Female')
+  // .isLength({ max: 6 }).withMessage('Gender is more than 6 characters'),
+  
+  // body('color')
+  // // .not().isEmpty().withMessage('Color is empty')
+  // .notEmpty().withMessage('Color is empty')
+  // .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/).withMessage('Color can only contain Thai and English letters and spaces')
+  // .custom(value => !/\d/.test(value)).withMessage('Color cannot contain numbers'),
+  
+  // body('description')
+  // .isLength({ max: 500 }).withMessage('Description is more than 500 characters'),
+
 
 async (req, res) => {
-  const errors = validationResult(req);
+//   const errors = validationResult(req);
 
-  if (!errors.isEmpty()) {
-    const errorMessages = errors.array().map(error => ({ errorMessages: error.msg }));
-    return res.status(400).json( errorMessages );
-  }
+//   if (!errors.isEmpty()) {
+//     const errorMessages = errors.array().map(error => ({ errorMessages: error.msg }));
+//     return res.status(400).json( errorMessages );
+  // }
+  
+
 
   // const newStrayAnimal = new StrayAnimal(req.body);
   const newStrayAnimal = new StrayAnimal({
@@ -212,35 +271,53 @@ async (req, res) => {
   }
 });
 
+// Route to upload an image and create a new stray animal
+app.post('/strayAnimals/upload', upload.single('picture'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+    const filePath = '/images/' + req.file.filename;
+    req.body.picture = filePath;
+    const newStrayAnimal = new StrayAnimal(req.body);
+    const savedStrayAnimal = await newStrayAnimal.save();
+    res.status(200).json(savedStrayAnimal);
+  } catch (err) {
+    res.status(500).json({ message: 'Error uploading image: ' + err.message });
+  }
+});
+
+
+
 // PUT update a stray animal by ID
-app.put('/strayAnimals/:saId', 
-  body('name')
-    .optional()
-    .isLength({ min: 1, max: 20 }).withMessage('Name must be 1 to 20 characters')
-    .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/).withMessage('Name can only contain Thai and English letters, numbers, and spaces'),
+app.put('/strayAnimals/:saId', validateCreateStrayAnimal, 
+  // body('name')
+  //   .optional()
+  //   .isLength({ min: 1, max: 20 }).withMessage('Name must be 1 to 20 characters')
+  //   .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/).withMessage('Name can only contain Thai and English letters, numbers, and spaces'),
   
-  body('picture')
-    .optional()
-    .notEmpty().withMessage('Image is empty'),
+  // body('picture')
+  //   .optional()
+  //   .notEmpty().withMessage('Image is empty'),
   
-  body('type')
-    .optional()
-    .isIn(['Dog', 'Cat']).withMessage('Type must be Dog or Cat')
-    .isLength({ max: 5 }).withMessage('Type is more than 5 characters'),
+  // body('type')
+  //   .optional()
+  //   .isIn(['Dog', 'Cat']).withMessage('Type must be Dog or Cat')
+  //   .isLength({ max: 5 }).withMessage('Type is more than 5 characters'),
   
-  body('gender')
-    .optional()
-    .isIn(['Male', 'Female']).withMessage('Gender must be Male or Female')
-    .isLength({ max: 6 }).withMessage('Gender is more than 6 characters'),
+  // body('gender')
+  //   .optional()
+  //   .isIn(['Male', 'Female']).withMessage('Gender must be Male or Female')
+  //   .isLength({ max: 6 }).withMessage('Gender is more than 6 characters'),
   
-  body('color')
-    .optional()
-    .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/).withMessage('Color can only contain Thai and English letters and spaces')
-    .custom(value => !/\d/.test(value)).withMessage('Color cannot contain numbers'),
+  // body('color')
+  //   .optional()
+  //   .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/).withMessage('Color can only contain Thai and English letters and spaces')
+  //   .custom(value => !/\d/.test(value)).withMessage('Color cannot contain numbers'),
   
-  body('description')
-    .optional()
-    .isLength({ max: 500 }).withMessage('Description is more than 500 characters'),
+  // body('description')
+  //   .optional()
+  //   .isLength({ max: 500 }).withMessage('Description is more than 500 characters'),
 
   async (req, res) => {
     const errors = validationResult(req);
