@@ -55,27 +55,35 @@ async function registerUser(req, res) {
     }
   }
 
-  async function loginUser(req, res) {
-    try {
-      const { identifier, password } = req.body;
-      const user = await User.findOne({ $or: [{ username: identifier }, { email: identifier }] });
+// Login user
+async function loginUser(req, res) {
+  try {
+    const { identifier, password } = req.body;
 
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-  
-      const isPasswordValid = await user.comparePassword(password);
-  
-      if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Invalid password' });
-      }
-  
-      const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' });
-      res.status(200).json({ token });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
+    // Check for required fields
+    if (!identifier || !password) {
+      return res.status(400).json({ message: 'Username/Email and password are required' });
     }
+
+    const user = await User.findOne({ $or: [{ username: identifier }, { email: identifier }] });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isPasswordValid = await user.comparePassword(password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid password' });
+    }
+
+    const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' });
+    res.status(200).json({ token });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
+}
+
 
   // Get all users
 async function getAllUsers(req, res) {
@@ -100,15 +108,29 @@ async function getUserById(req, res) {
   }
 }
 
-// Delete user by ID - Placeholder
+// Delete user by ID
 async function deleteUserById(req, res) {
   try {
-    // Implement user deletion logic here using req.params.userId
-    res.json({ message: 'User deleted' });
+    const userId = req.params.userId;
+
+    // Check if userId is provided
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Find the user by userId and delete
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ message: 'User deleted', deletedUser });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 }
+
 
 // Edit user by ID - Placeholder for future use (using PUT)
 async function editUserById(req, res) {
