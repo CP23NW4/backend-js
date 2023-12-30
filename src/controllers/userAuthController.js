@@ -8,9 +8,9 @@ const secretKey = process.env.SECRET_KEY; // Accessing the secret key from the e
 
 async function loginUser(req, res) {
     try {
-      const { username, password } = req.body;
-      const user = await User.findOne({ username });
-  
+      const { identifier, password } = req.body;
+      const user = await User.findOne({ $or: [{ username: identifier }, { email: identifier }] });
+
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
