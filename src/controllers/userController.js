@@ -10,17 +10,68 @@ const secretKey = process.env.SECRET_KEY; // Accessing the secret key from the e
 // Register a new user
 async function registerUser(req, res) {
     try {
-      const { username, email, password } = req.body;
+      const {
+        userPicture,
+        name,
+        idCard,
+        username,
+        email,
+        password,
+        phoneNumber,
+        DOB,
+        userAddress,
+      } = req.body;
+
+      // Check for required fields
+    if (!name || !username || !email || !password || !phoneNumber) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
       const existingUser = await User.findOne({ $or: [{ username }, { email }] });
       if (existingUser) {
         return res.status(400).json({ message: 'Username or email already exists' });
       }
-  
-      const newUser = new User({ username, email, password });
+    
+      // Create a new user object with required fields
+      const newUser = new User({
+        name,
+        username,
+        email,
+        password,
+        phoneNumber,
+        userPicture: userPicture || null,
+        idCard: idCard || null,
+        DOB: DOB || null,
+        userAddress: userAddress || null,
+        createdOn: new Date(),
+        updatedOn: new Date(),
+      });
       await newUser.save();
   
       const token = jwt.sign({ userId: newUser._id }, secretKey, { expiresIn: '1h' });
       res.status(201).json({ token });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
+  async function loginUser(req, res) {
+    try {
+      const { identifier, password } = req.body;
+      const user = await User.findOne({ $or: [{ username: identifier }, { email: identifier }] });
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      const isPasswordValid = await user.comparePassword(password);
+  
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid password' });
+      }
+  
+      const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' });
+      res.status(200).json({ token });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
@@ -71,6 +122,7 @@ async function editUserById(req, res) {
 
 module.exports = {
   registerUser,
+  loginUser,
   getAllUsers,
   getUserById,
   deleteUserById,
