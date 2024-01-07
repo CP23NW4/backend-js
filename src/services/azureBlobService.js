@@ -19,7 +19,29 @@ async function uploadImageToBlob(imageData, fileName) {
 
 // Add more functions for retrieving/deleting images as needed
 
+async function getImageFromBlob(fileName) {
+    const blockBlobClient = containerClient.getBlockBlobClient(fileName);
+    const downloadBlockBlobResponse = await blockBlobClient.download(0);
+    const data = await streamToBuffer(downloadBlockBlobResponse.readableStreamBody);
+    return data;
+  }
+
+  // Helper function to convert stream to buffer
+function streamToBuffer(readableStream) {
+    return new Promise((resolve, reject) => {
+      const chunks = [];
+      readableStream.on('data', (data) => {
+        chunks.push(data instanceof Buffer ? data : Buffer.from(data));
+      });
+      readableStream.on('end', () => {
+        resolve(Buffer.concat(chunks));
+      });
+      readableStream.on('error', reject);
+    });
+  }
+
 module.exports = {
   uploadImageToBlob,
+  getImageFromBlob,
   // export other functions if needed
 };

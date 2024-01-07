@@ -148,6 +148,27 @@ const deleteStrayAnimal = async (req, res) => {
     }
 
 
+    // ------------------------------------------------------------------
+    const { getImageFromBlob } = require('../services/azureBlobService');
+
+    async function getImage(req, res) {
+      try {
+        const fileName = req.params.fileName; // Assuming you pass the file name as a parameter
+        const imageData = await getImageFromBlob(fileName);
+    
+        // Set response content type as image/jpeg (or appropriate content type based on your image)
+        res.writeHead(200, {
+          'Content-Type': 'image/jpeg',
+          'Content-Length': imageData.length,
+        });
+        res.end(imageData);
+      } catch (error) {
+        console.error('Error retrieving image', error);
+        res.status(500).json({ error: 'Failed to retrieve image' });
+      }
+    }
+
+
   module.exports = {
     getAllStrayAnimals,
     getStrayAnimalById,
@@ -155,6 +176,7 @@ const deleteStrayAnimal = async (req, res) => {
     updateStrayAnimal,
     deleteStrayAnimal,
     uploadImage,
+    getImage,
   };
 
   
