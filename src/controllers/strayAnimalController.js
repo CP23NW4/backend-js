@@ -128,6 +128,25 @@ const deleteStrayAnimal = async (req, res) => {
     }
   };
 
+  // ------------------------------------------------------------------
+  const { uploadImageToBlob } = require('../services/azureBlobService'); // Adjust the path as needed
+
+    async function uploadImage(req, res) {
+      try {
+        const imageData = req.file.buffer; // Assuming you're using multer or similar for file upload
+        const fileName = req.file.originalname;
+
+        const uploadResponse = await uploadImageToBlob(imageData, fileName);
+        console.log('Image uploaded to Azure Blob Storage:', uploadResponse);
+
+        // Handle other tasks (e.g., saving image URL in your database, responding to the client, etc.)
+        res.status(200).json({ message: 'Image uploaded successfully', url: uploadResponse.url });
+      } catch (error) {
+        console.error('Error uploading image', error);
+        res.status(500).json({ error: 'Failed to upload image' });
+      }
+    }
+
 
   module.exports = {
     getAllStrayAnimals,
@@ -135,6 +154,7 @@ const deleteStrayAnimal = async (req, res) => {
     createStrayAnimal,
     updateStrayAnimal,
     deleteStrayAnimal,
+    uploadImage,
   };
 
   
