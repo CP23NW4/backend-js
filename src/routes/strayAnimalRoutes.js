@@ -44,7 +44,7 @@ const multer = require('multer'); // Assuming you use multer for file uploads
 
 const upload = multer(); // Set up multer middleware for handling multipart/form-data
 
-router.post('/upload-image', upload.single('picture'), strayAnimalController.uploadImage);
+// router.post('/upload-image', upload.single('picture'), strayAnimalController.uploadImage);
 // Route to get an image by file name
 router.get('/get-image/:fileName', strayAnimalController.getImage);
 
