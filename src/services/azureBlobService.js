@@ -6,12 +6,15 @@ require('dotenv').config({ path: '../.env' });
 
 
 const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-const containerName = 'dogs'; // Your container name in Azure Storage
+
+// Remove the default containerName here
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-const containerClient = blobServiceClient.getContainerClient(containerName);
 
-async function uploadImageToBlob(imageData, fileName) {
+async function uploadImageToBlob(imageData, fileName, containerName) {
+  // Get the container client dynamically based on the provided containerName
+  const containerClient = blobServiceClient.getContainerClient(containerName);
+  
   const blockBlobClient = containerClient.getBlockBlobClient(fileName);
   const uploadBlobResponse = await blockBlobClient.uploadData(imageData);
   return uploadBlobResponse;
@@ -19,15 +22,18 @@ async function uploadImageToBlob(imageData, fileName) {
 
 // Add more functions for retrieving/deleting images as needed
 
-async function getImageFromBlob(fileName) {
-    const blockBlobClient = containerClient.getBlockBlobClient(fileName);
-    const downloadBlockBlobResponse = await blockBlobClient.download(0);
-    const data = await streamToBuffer(downloadBlockBlobResponse.readableStreamBody);
-    return data;
-  }
+async function getImageFromBlob(fileName, containerName) {
+  // Get the container client dynamically based on the provided containerName
+  const containerClient = blobServiceClient.getContainerClient(containerName);
+
+  const blockBlobClient = containerClient.getBlockBlobClient(fileName);
+  const downloadBlockBlobResponse = await blockBlobClient.download(0);
+  const data = await streamToBuffer(downloadBlockBlobResponse.readableStreamBody);
+  return data;
+}
 
   // Helper function to convert stream to buffer
-function streamToBuffer(readableStream) {
+  function streamToBuffer(readableStream) {
     return new Promise((resolve, reject) => {
       const chunks = [];
       readableStream.on('data', (data) => {

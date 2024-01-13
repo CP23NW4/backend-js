@@ -7,6 +7,9 @@ const axios = require('axios');
 require('dotenv').config({ path: '../.env' });
 const fs = require('fs');
 
+const { uploadImageToBlob } = require('../services/azureBlobService'); // Adjust the path as needed
+
+
 
 // Get all stray animals
 const getAllStrayAnimals = async (req, res) => {
@@ -45,6 +48,17 @@ const createStrayAnimal = async (req, res) => {
 
     // Handle image upload to Azure Blob Storage
     try {
+      let containerName;
+
+      // Determine the container based on the animal type
+      if (type.toLowerCase() === 'dog') {
+        containerName = 'dogs';
+      } else if (type.toLowerCase() === 'cat') {
+        containerName = 'cats';
+      } else {
+        return res.status(400).json({ message: 'Invalid animal type. Supported types are Dog and Cat.' });
+      }
+
       let imageUrl;
   
       if (isExternalUrl(picture)) {
@@ -56,16 +70,15 @@ const createStrayAnimal = async (req, res) => {
         const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`; // Change the filename as per your requirements
   
         // Upload image to Azure Blob Storage
-        await azureBlobService.uploadImageToBlob(imageBuffer, fileName);
+        await azureBlobService.uploadImageToBlob(imageBuffer, fileName, containerName);
   
         // Set the imageUrl as the Blob URL
-        imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${process.env.AZURE_STORAGE_CONTAINER}/${fileName}`;
+        imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${containerName}/${fileName}`;
       }
 
     // Create a new stray animal with the Azure Blob Storage URL
     const newStrayAnimal = new StrayAnimal({
       name,
-      // picture: `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${process.env.AZURE_STORAGE_CONTAINER}/${fileName}`,
       picture: imageUrl,
       type,
       gender,
@@ -177,24 +190,7 @@ const deleteStrayAnimal = async (req, res) => {
     }
   };
 
-  // ------------------------------------------------------------------
-  const { uploadImageToBlob } = require('../services/azureBlobService'); // Adjust the path as needed
 
-    // async function uploadImage(req, res) {
-    //   try {
-    //     const imageData = req.file.buffer; // Assuming you're using multer or similar for file upload
-    //     const fileName = req.file.originalname;
-
-    //     const uploadResponse = await uploadImageToBlob(imageData, fileName);
-    //     console.log('Image uploaded to Azure Blob Storage:', uploadResponse);
-
-    //     // Handle other tasks (e.g., saving image URL in your database, responding to the client, etc.)
-    //     res.status(200).json({ message: 'Image uploaded successfully', url: uploadResponse.url });
-    //   } catch (error) {
-    //     console.error('Error uploading image', error);
-    //     res.status(500).json({ error: 'Failed to upload image' });
-    //   }
-    // }
 
 
     // ------------------------------------------------------------------
