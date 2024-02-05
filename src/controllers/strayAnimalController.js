@@ -9,6 +9,9 @@ const fs = require('fs')
 
 const { uploadImageToBlob } = require('../services/azureBlobService') // Adjust the path as needed
 
+const multer = require('multer');
+const upload = multer(); // create an instance of multer
+
 // Get all stray animals
 const getAllStrayAnimals = async (req, res) => {
   try {
@@ -34,16 +37,25 @@ const getStrayAnimalById = async (req, res) => {
 
 // Create a new stray animal
 const createStrayAnimal = async (req, res) => {
-  const errors = validationResult(req)
 
-  if (!errors.isEmpty()) {
-    const errorMessages = errors
-      .array()
-      .map((error) => ({ errorMessages: error.msg }))
-    return res.status(400).json(errorMessages)
-  }
+  console.log('Request Body:', req.body);
+  console.log('Request File:', req.file);
+  console.log('Req Body Picture:', req.body.picture);
+  console.log('Is External URL:', isExternalUrl(req.body.picture));
+
+
+  // const errors = validationResult(req)
+
+  // if (!errors.isEmpty()) {
+  //   const errorMessages = errors
+  //     .array()
+  //     .map((error) => ({ errorMessages: error.msg }))
+  //   return res.status(400).json(errorMessages)
+  // }
 
   const { name, picture, type, gender, color, description } = req.body
+
+  // const { name, type, gender, color, description } = req.body;
 
   // Handle image upload to Azure Blob Storage
   try {
@@ -62,17 +74,17 @@ const createStrayAnimal = async (req, res) => {
 
     let imageUrl
 
-    if (isExternalUrl(picture)) {
+    if (isExternalUrl(req.body.picture)) {
       // If the picture is an external URL, use it directly
-      imageUrl = picture
+      imageUrl = req.body.picture
     } else {
-      // If the picture is a local file path, upload it to Azure Blob Storage
-      const imageBuffer = await readFileAsync(picture)
+      // If the picture is part of form-data, upload it to Azure Blob Storage
+      const fileBuffer = req.file.buffer; // Access the file buffer from form-data
       const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg` // Change the filename as per your requirements
 
       // Upload image to Azure Blob Storage
       await azureBlobService.uploadImageToBlob(
-        imageBuffer,
+        fileBuffer,
         fileName,
         containerName
       )
