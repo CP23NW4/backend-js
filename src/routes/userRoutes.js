@@ -3,6 +3,11 @@
 const express = require('express');
 const router = express.Router();
 const { registerUser, loginUser, getAllUsers, getUserById, deleteUserById, editUserById } = require('../controllers/userController');
+
+const userController = require('../controllers/userController');
+router.get('/', userController.getAllUsers);
+router.get('/:userId', userController.getUserById);
+
 // const { authenticateToken } = require('../middlewares/userAuthMiddleware');
 const User = require('../models/User');
 

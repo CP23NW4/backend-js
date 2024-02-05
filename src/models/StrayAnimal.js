@@ -10,6 +10,10 @@ const strayAnimalSchema = new mongoose.Schema({
     color: String,
     description: String,
     ownerId: String,
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    },
     createdOn: Date,
     updatedOn: Date,
 });
