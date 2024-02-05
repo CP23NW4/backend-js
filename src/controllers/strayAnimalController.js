@@ -127,9 +127,7 @@ const createStrayAnimal = async (req, res) => {
       imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${containerName}/${fileName}`
     }
 
-    // Get the owner's ID from the request or your authentication mechanism
-    const ownerId = req.user.id; // Adjust this based on your authentication method
-    
+  
     // Create a new stray animal with the Azure Blob Storage URL
     const newStrayAnimal = new StrayAnimal({
       name,
@@ -138,7 +136,6 @@ const createStrayAnimal = async (req, res) => {
       gender,
       color,
       description,
-      owner: ownerId,
       createdOn: new Date(),
     })
 
