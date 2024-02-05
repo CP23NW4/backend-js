@@ -9,23 +9,25 @@ const { User } = require('../models/User')
 
 const router = express.Router()
 
+const multer = require('multer');
+const upload = multer(); // create an instance of multer
+
 router.get('/', strayAnimalController.getAllStrayAnimals)
 router.get('/:saId', strayAnimalController.getStrayAnimalById)
 
 router.post(
-  '/',
+  '/',  upload.single('picture'),
   [
-    body('name')
-      .notEmpty()
-      .isLength({ min: 1, max: 20 })
-      .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/),
-    body('picture').notEmpty(),
+    body('name').notEmpty().isLength({ min: 1, max: 20 }).matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/),
     body('type').notEmpty().isIn(['Dog', 'Cat']).isLength({ max: 5 }),
     body('gender').notEmpty().isIn(['Male', 'Female']).isLength({ max: 6 }),
-    body('color')
-      .notEmpty()
-      .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/)
-      .custom((value) => !/\d/.test(value)),
+    body('color').notEmpty().matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/).custom((value, { req }) => {
+      // Custom validation for 'picture' field
+      if (!req.file) {
+        throw new Error('Picture is required.');
+      }
+      return true;
+    }),
     body('description').isLength({ max: 500 }),
   ],
   strayAnimalController.createStrayAnimal
