@@ -4,6 +4,7 @@ const express = require('express')
 const { body, validationResult } = require('express-validator')
 const StrayAnimal = require('../models/StrayAnimal')
 const strayAnimalController = require('../controllers/strayAnimalController')
+const { authenticateUser } = require('../middlewares/userAuthMiddleware');
 
 const router = express.Router()
 
@@ -28,7 +29,7 @@ router.post(
     }),
     body('description').isLength({ max: 500 }),
   ],
-  strayAnimalController.createStrayAnimal
+  authenticateUser, strayAnimalController.createStrayAnimal
 )
 
 router.put(
