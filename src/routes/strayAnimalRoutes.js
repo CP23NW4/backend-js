@@ -48,10 +48,10 @@ router.put(
       .custom((value) => !/\d/.test(value)),
     body('description').optional().isLength({ max: 500 }),
   ],
-  strayAnimalController.updateStrayAnimal
+  authenticateUser, strayAnimalController.updateStrayAnimal
 )
 
-router.delete('/:saId', strayAnimalController.deleteStrayAnimal)
+router.delete('/:saId', authenticateUser, strayAnimalController.deleteStrayAnimal)
 
 // --------------------------------------------------------------
 
