@@ -15,7 +15,41 @@ const upload = multer(); // create an instance of multer
 // Get all stray animals
 const getAllStrayAnimals = async (req, res) => {
   try {
-    const allStrayAnimals = await StrayAnimal.find().sort({ createdOn: -1 })
+    // const allStrayAnimals = await StrayAnimal.find().sort({ createdOn: -1 })
+    const allStrayAnimals = await StrayAnimal.aggregate([
+      {
+        $lookup: {
+          from: 'users', // Assuming your User collection is named 'users'
+          localField: 'ownerId',
+          foreignField: '_id',
+          as: 'owner',
+        },
+      },
+      {
+        $unwind: {
+          path: '$owner',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          picture: 1,
+          type: 1,
+          gender: 1,
+          color: 1,
+          description: 1,
+          createdOn: 1,
+          updatedOn: 1,
+          ownerName: '$owner.name', // Include owner's name in the result
+        },
+      },
+      {
+        $sort: { createdOn: -1 },
+      },
+    ]);
+    
     res.json(allStrayAnimals)
   } catch (err) {
     res.status(500).json({ message: err.message })
@@ -25,13 +59,13 @@ const getAllStrayAnimals = async (req, res) => {
 // Get animal by ID
 const getStrayAnimalById = async (req, res) => {
   try {
-    const strayAnimalbyId = await StrayAnimal.findById(req.params.saId)
-    if (!strayAnimalbyId) {
-      return res.status(404).json({ message: 'Stray animal not found' })
+    const strayAnimalById = await StrayAnimal.findById(req.params.saId);
+    if (!strayAnimalById) {
+      return res.status(404).json({ message: 'Stray animal not found' });
     }
-    res.json(strayAnimalbyId)
+    res.json(strayAnimalById);
   } catch (err) {
-    res.status(500).json({ message: err.message })
+    res.status(500).json({ message: err.message });
   }
 }
 
@@ -93,6 +127,7 @@ const createStrayAnimal = async (req, res) => {
       imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${containerName}/${fileName}`
     }
 
+  
     // Create a new stray animal with the Azure Blob Storage URL
     const newStrayAnimal = new StrayAnimal({
       name,

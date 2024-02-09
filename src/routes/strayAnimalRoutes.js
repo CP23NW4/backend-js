@@ -1,10 +1,12 @@
 // strayAnimalRoutes.js for defining the routes related to stray animals.
 
 const express = require('express')
+const { request, response } = require("express");
 const { body, validationResult } = require('express-validator')
-const StrayAnimal = require('../models/StrayAnimal')
+const { StrayAnimal } = require('../models/StrayAnimal')
 const strayAnimalController = require('../controllers/strayAnimalController')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware');
+const { User } = require('../models/User')
 
 const router = express.Router()
 
@@ -52,6 +54,59 @@ router.put(
 )
 
 router.delete('/:saId', authenticateUser, strayAnimalController.deleteStrayAnimal)
+//Read
+router.get("/UserStrayAnimal", async (request, response) => {
+  try {
+    const result = await StrayAnimal.aggregate([
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userID',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      {
+        $unwind: '$user'
+      }
+    ]);
+    response.json(result);
+  } catch (error){
+    console.error("Error fetching user and strayAnimal:", error);
+    response.status(500).json({ error: "Internal Server Error" });
+  }
+})
+
+// Read by ID
+router.get("/UserStrayAnimal/:id", async (request, response) => {
+  try {
+    const userId = request.params.id;
+
+    const result = await StrayAnimal.aggregate([
+      {
+        $match: {
+          userID: mongoose.Types.ObjectId(userId)
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userID',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      {
+        $unwind: '$user'
+      }
+    ]);
+
+    response.json(result);
+  } catch (error) {
+    console.error("Error fetching user and strayAnimal:", error);
+    response.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 // --------------------------------------------------------------
 
@@ -63,4 +118,4 @@ router.delete('/:saId', authenticateUser, strayAnimalController.deleteStrayAnima
 // Route to get an image by file name
 // router.get('/get-image/:containerName:fileName', strayAnimalController.getImage);
 
-module.exports = router
+module.exports = router;
