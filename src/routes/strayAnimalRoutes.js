@@ -9,7 +9,11 @@ const { authenticateUser } = require('../middlewares/userAuthMiddleware');
 const router = express.Router()
 
 const multer = require('multer');
-const upload = multer(); // create an instance of multer
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 11 * 1024 * 1024 } // 11MB limit
+}); // create an instance of multer
 
 router.get('/', strayAnimalController.getAllStrayAnimals)
 router.get('/:saId', strayAnimalController.getStrayAnimalById)
