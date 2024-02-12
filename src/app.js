@@ -1,13 +1,13 @@
 // The main entry point to initialize the Express app and connect all the pieces together.
-
 const express = require('express');
+
 const mongoose = require('mongoose');
 const cors = require('cors');
 const strayAnimalRoutes = require('./routes/strayAnimalRoutes');
 const userRoutes = require('./routes/userRoutes');
 const app = express();
 const multer = require('multer');
-const { uploadImage } = require('./controllers/strayAnimalController'); // Import the image upload controller function
+// const { uploadImage } = require('./controllers/strayAnimalController'); // Import the image upload controller function
 require('dotenv').config({ path: '../.env' });
 
 app.use(cors());

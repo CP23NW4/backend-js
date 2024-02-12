@@ -9,7 +9,11 @@ const strayAnimalSchema = new mongoose.Schema({
     gender: String,
     color: String,
     description: String,
-    ownerId: String,
+    owner: {
+        ownerId: String,
+        ownerUsername: String,
+        phoneNumber: String,
+    },
     createdOn: Date,
     updatedOn: Date,
 });

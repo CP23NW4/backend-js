@@ -2,6 +2,7 @@
 
 const { validationResult } = require('express-validator')
 const StrayAnimal = require('../models/StrayAnimal')
+const User = require('../models/User')
 const azureBlobService = require('../services/azureBlobService')
 const axios = require('axios')
 require('dotenv').config({ path: '../.env' })
@@ -37,36 +38,38 @@ const getStrayAnimalById = async (req, res) => {
 
 // Create a new stray animal
 const createStrayAnimal = async (req, res) => {
+  console.log('Request Body:', req.body)
+  console.log('Request File:', req.file)
+  console.log('Request User:', req.user)
 
-  console.log('Request Body:', req.body);
-  console.log('Request File:', req.file);
-  // console.log('Req Body Picture:', req.body.picture);
-  // console.log('Is External URL:', isExternalUrl(req.body.picture));
-
-
-  // const errors = validationResult(req)
-
-  // if (!errors.isEmpty()) {
-  //   const errorMessages = errors
-  //     .array()
-  //     .map((error) => ({ errorMessages: error.msg }))
-  //   return res.status(400).json(errorMessages)
-  // }
-
-   // Check if file size exceeds the limit
-   if (req.file && req.file.size > 11 * 1024 * 1024) {
-    return res.status(400).json({ message: 'Image size should be less than 11MB.' });
-  }
-
-  const { name, picture, type, gender, color, description } = req.body
-
-  // const { name, type, gender, color, description } = req.body;
-
-  // Handle image upload to Azure Blob Storage
   try {
-    let containerName
+    // Check if the user is logged in
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
 
+    // Retrieve logged-in user's data
+    const loggedInUserId = req.user.userId
+
+    // Fetch user data from the database
+    const loggedInUser = await User.findById(loggedInUserId)
+
+    if (!loggedInUser) {
+      return res.status(404).json({ message: 'Logged-in user not found' })
+    }
+
+    // Check if picture size exceeds the limit
+    if (req.file && req.file.size > 11 * 1024 * 1024) {
+      return res
+        .status(400)
+        .json({ message: 'Image size should be less than 11MB.' })
+    }
+
+    const { name, picture, type, gender, color, description } = req.body
+
+    // Handle image upload to Azure Blob Storage
     // Determine the container based on the animal type
+    let containerName
     if (type.toLowerCase() === 'dog') {
       containerName = 'dogs'
     } else if (type.toLowerCase() === 'cat') {
@@ -84,7 +87,7 @@ const createStrayAnimal = async (req, res) => {
       imageUrl = req.body.picture
     } else {
       // If the picture is part of form-data, upload it to Azure Blob Storage
-      const fileBuffer = req.file.buffer; // Access the file buffer from form-data
+      const fileBuffer = req.file.buffer // Access the file buffer from form-data
       const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg` // Change the filename as per your requirements
 
       // Upload image to Azure Blob Storage
@@ -106,6 +109,11 @@ const createStrayAnimal = async (req, res) => {
       gender,
       color,
       description,
+      owner: {
+        ownerId: loggedInUser._id,
+        ownerUsername: loggedInUser.username,
+        phoneNumber: loggedInUser.phoneNumber,
+      },
       createdOn: new Date(),
     })
 
