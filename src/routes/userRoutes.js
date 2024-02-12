@@ -13,6 +13,7 @@ const {
 const User = require('../models/User')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
+
 // User registration
 router.post(
   '/register',

@@ -16,12 +16,18 @@ app.use(express.json());
 // MongoDB connection
 mongoose.connect('mongodb+srv://mnwadmin:meowandwoof@meowandwoof.gcedq3t.mongodb.net/meowandwoof', {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+  useUnifiedTopology: true,});
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+
 
 // Routes
+// const strayAnimalRoutes = require('./routes/strayAnimalRoutes');
+// const userRoutes = require('./routes/userRoutes');
+
 app.use('/strayAnimals', strayAnimalRoutes);
-app.use('/users', userRoutes); // Use user routes at '/users'
+app.use('/users', userRoutes);
+
 
 // Error handling middleware for authentication issues
 app.use((err, req, res, next) => {
