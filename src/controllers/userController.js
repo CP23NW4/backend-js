@@ -103,7 +103,7 @@ async function loginUser(req, res) {
   }
 }
 
-// Get all users
+
 async function getAllUsers(req, res) {
   try {
     const users = await User.find()
@@ -114,6 +114,17 @@ async function getAllUsers(req, res) {
 }
 
 // Get user by ID
+// const getUserById = async (req, res) => {
+//   try {
+//     const userById = await User.findById(req.params.userId);
+//     if (!userById) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+//     res.json(userById);
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// }
 async function getUserById(req, res) {
   try {
     const user = await User.findById(req.params.userId)
