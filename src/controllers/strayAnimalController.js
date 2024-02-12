@@ -9,8 +9,8 @@ const fs = require('fs')
 
 const { uploadImageToBlob } = require('../services/azureBlobService') // Adjust the path as needed
 
-const multer = require('multer');
-const upload = multer(); // create an instance of multer
+// const multer = require('multer');
+// const upload = multer(); // create an instance of multer
 
 // Get all stray animals
 const getAllStrayAnimals = async (req, res) => {
@@ -74,8 +74,8 @@ const createStrayAnimal = async (req, res) => {
 
   console.log('Request Body:', req.body);
   console.log('Request File:', req.file);
-  console.log('Req Body Picture:', req.body.picture);
-  console.log('Is External URL:', isExternalUrl(req.body.picture));
+  // console.log('Req Body Picture:', req.body.picture);
+  // console.log('Is External URL:', isExternalUrl(req.body.picture));
 
 
   // const errors = validationResult(req)
@@ -86,6 +86,11 @@ const createStrayAnimal = async (req, res) => {
   //     .map((error) => ({ errorMessages: error.msg }))
   //   return res.status(400).json(errorMessages)
   // }
+
+   // Check if file size exceeds the limit
+   if (req.file && req.file.size > 11 * 1024 * 1024) {
+    return res.status(400).json({ message: 'Image size should be less than 11MB.' });
+  }
 
   const { name, picture, type, gender, color, description } = req.body
 
