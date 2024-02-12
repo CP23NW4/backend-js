@@ -13,7 +13,6 @@ const {
 const User = require('../models/User')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
-
 // User registration
 router.post(
   '/register',
@@ -113,11 +112,11 @@ router.post(
 // User login
 router.post('/login', loginUser)
 
-// Get all users - Temporarily removed authentication middleware
-router.get('/', /* authenticateToken, */ getAllUsers)
+// Get all users
+router.get('/', authenticateUser, getAllUsers)
 
-// Get user by ID - Temporarily removed authentication middleware
-router.get('/:userId', /* authenticateToken, */ getUserById)
+// Get user by ID
+router.get('/:userId', authenticateUser, getUserById)
 
 // Delete user by ID
 router.delete('/:userId', authenticateUser, deleteUserById)
