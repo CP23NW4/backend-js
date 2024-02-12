@@ -7,10 +7,15 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config({ path: '../.env' });
 const secretKey = process.env.SECRET_KEY; // Accessing the secret key from the environment variable}
 
+const { validationResult } = require('express-validator');
 
 // Register a new user
 async function registerUser(req, res) {
     try {
+      const errors = validationResult(req).formatWith(({ value, msg }) => ({ value, msg }));
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
       const {
         userPicture,
         name,
@@ -49,8 +54,9 @@ async function registerUser(req, res) {
       });
       await newUser.save();
   
-      const token = jwt.sign({ userId: newUser._id }, secretKey, { expiresIn: '1h' });
-      res.status(201).json({ token });
+      // const token = jwt.sign({ userId: newUser._id }, secretKey, { expiresIn: '1h' });
+      // res.status(201).json({ token });
+      res.status(201).json({ message: 'User created successfully', user: newUser });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
