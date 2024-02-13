@@ -63,7 +63,7 @@ async function registerUser(req, res) {
 
     res
       .status(201)
-      .json({ message: 'User created successfully', user: newUser })
+      .json({ message: 'User created successfully!', user: newUser })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
@@ -98,6 +98,7 @@ async function loginUser(req, res) {
 
     const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' })
     res.status(200).json({ token })
+    console.log('User:', identifier, 'logged-in successfully!')
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
@@ -108,6 +109,7 @@ async function getAllUsers(req, res) {
   try {
     const users = await User.find()
     res.json(users)
+    console.log('All users:', users)
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
@@ -121,6 +123,7 @@ async function getUserById(req, res) {
       return res.status(404).json({ message: 'User not found' })
     }
     res.json(user)
+    console.log(user)
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
@@ -128,33 +131,18 @@ async function getUserById(req, res) {
 
 // Delete user by ID
 async function deleteUserById(req, res) {
+  console.log('Request User:', req.user.userId)
+
   try {
     const userId = req.params.userId
+    const authenticatedUserId = req.user.userId // Assuming you have the authenticated user's ID stored in req.user.userId
 
-    // Check if userId is provided
-    if (!userId) {
-      return res.status(400).json({ message: 'User ID is required' })
-    }
+    // Retrieve the authenticated user's role from the database or wherever it's stored
+    const authenticatedUser = await User.findById(authenticatedUserId)
+    const authenticatedUserRole = authenticatedUser.role
 
-    // Find the user by userId and delete
-    const deletedUser = await User.findByIdAndDelete(userId)
-
-    if (!deletedUser) {
-      return res.status(404).json({ message: 'User not found' })
-    }
-
-    res.json({ message: 'User deleted', deletedUser })
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-}
-
-// Edit user by ID - Placeholder for future use (using PUT)
-async function editUserById(req, res) {
-  try {
-    const userId = req.params.userId
-    // const { username, phoneNumber, userAddress, password } = req.body;
-    const { username, phoneNumber, userAddress } = req.body
+    // console.log('Auth User:', authenticatedUser)
+    console.log('Auth User Role:', authenticatedUserRole)
 
     // Check if userId is provided
     if (!userId) {
@@ -167,6 +155,66 @@ async function editUserById(req, res) {
     if (!user) {
       return res.status(404).json({ message: 'User not found' })
     }
+
+    // Check if the authenticated user is an admin
+    if (authenticatedUserRole !== 'admin' && userId !== authenticatedUserId) {
+      return res
+        .status(403)
+        .json({ message: 'You are not authorized to delete this user' })
+    }
+
+    // Find the user by userId and delete
+    const deletedUser = await User.findByIdAndDelete(userId)
+
+    res.json({ message: 'User deleted', deletedUser })
+    console.log('User deleted', deletedUser)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
+
+// Edit user by ID - Placeholder for future use (using PUT)
+async function editUserById(req, res) {
+  console.log('Request Body:', req.body)
+  console.log('Request User:', req.user.userId)
+
+  try {
+    const userId = req.params.userId
+    const authenticatedUserId = req.user.userId // Assuming you have the authenticated user's ID stored in req.user.id
+
+    // Retrieve the authenticated user's role from the database or wherever it's stored
+    const authenticatedUser = await User.findById(authenticatedUserId)
+    const authenticatedUserRole = authenticatedUser.role
+
+    // console.log('Auth User:', authenticatedUser)
+    console.log('Auth User Role:', authenticatedUserRole)
+
+    // Check if userId is provided
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' })
+    }
+
+    // Find the user by userId
+    const user = await User.findById(userId)
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    // // Ensure that the authenticated user can only edit their own information
+    // if (userId !== authenticatedUserId) {
+    //   return res.status(403).json({ message: 'You are not authorized to edit this user' })
+    // }
+
+    // Check if the authenticated user is an admin
+    if (authenticatedUserRole !== 'admin' && userId !== authenticatedUserId) {
+      return res
+        .status(403)
+        .json({ message: 'You are not authorized to edit this user' })
+    }
+
+    // const { username, phoneNumber, userAddress, password } = req.body;
+    const { username, phoneNumber, userAddress } = req.body
 
     // If username is provided, ensure it's unique
     if (username && username !== user.username) {
@@ -197,7 +245,8 @@ async function editUserById(req, res) {
 
     await user.save()
 
-    res.json({ message: 'User updated' })
+    res.json({ message: 'User updated', user })
+    console.log('User updated:', user)
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
