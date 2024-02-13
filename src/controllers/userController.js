@@ -28,6 +28,7 @@ async function registerUser(req, res) {
       password,
       phoneNumber,
       DOB,
+      role,
       userAddress,
     } = req.body
 
@@ -53,14 +54,13 @@ async function registerUser(req, res) {
       userPicture: userPicture || null,
       idCard: idCard || null,
       DOB: DOB || null,
+      role: 'general', // Default role
       userAddress: userAddress || null,
       createdOn: new Date(),
       updatedOn: new Date(),
     })
     await newUser.save()
 
-    // const token = jwt.sign({ userId: newUser._id }, secretKey, { expiresIn: '1h' });
-    // res.status(201).json({ token });
     res
       .status(201)
       .json({ message: 'User created successfully', user: newUser })

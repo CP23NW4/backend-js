@@ -11,6 +11,10 @@ const userSchema = new mongoose.Schema({
     password: String,
     phoneNumber: String,
     DOB: Date,
+    role: {
+      type: String,
+      default: 'general'
+    },
     userAddress: String,
     createdOn: {
       type: Date,
