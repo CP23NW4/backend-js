@@ -23,12 +23,10 @@ router.post(
       .notEmpty()
       .withMessage('Name is required')
       .trim()
-      .matches(/^[\u0E01-\u0E5B]+$/)
-      .withMessage('Name should be in Thai language only')
-      .custom(
-        (value) => !/\s/.test(value[0]) && !/\s/.test(value[value.length - 1])
+      .matches(/^[\u0E01-\u0E5B]+( [\u0E01-\u0E5B]+)*$/)
+      .withMessage(
+        'Name should be in Thai language only with whitespace in the middle'
       )
-      .withMessage('Name cannot contain whitespace at the beginning or end')
       .isLength({ min: 5, max: 100 })
       .withMessage(
         'Name must be more than 5 and less than or equal to 100 characters'
@@ -125,6 +123,7 @@ router.delete('/:userId', authenticateUser, deleteUserById)
 // Edit user by ID
 router.put('/:userId', authenticateUser, editUserById)
 
+// Get logged-in user data
 router.get('/', authenticateUser, getLoggedInUserData)
 
 module.exports = router
