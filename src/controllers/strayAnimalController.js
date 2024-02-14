@@ -10,9 +10,6 @@ const fs = require('fs')
 
 const { uploadImageToBlob } = require('../services/azureBlobService') // Adjust the path as needed
 
-// const multer = require('multer');
-// const upload = multer(); // create an instance of multer
-
 // Get all stray animals
 const getAllStrayAnimals = async (req, res) => {
   try {
@@ -221,34 +218,10 @@ const deleteStrayAnimal = async (req, res) => {
   }
 }
 
-// ------------------------------------------------------------------
-// const { getImageFromBlob } = require('../services/azureBlobService');
-
-// async function getImage(req, res) {
-//   try {
-//     const fileName = req.params.fileName; // Assuming you pass the file name as a parameter
-//     const containerName = req.params.containerName; // Assuming you pass the container name as a parameter
-
-//     const imageData = await getImageFromBlob(fileName, containerName);
-
-//     // Set response content type as image/jpeg (or appropriate content type based on your image)
-//     res.writeHead(200, {
-//       'Content-Type': 'image/jpeg',
-//       'Content-Length': imageData.length,
-//     });
-//     res.end(imageData);
-//   } catch (error) {
-//     console.error('Error retrieving image', error);
-//     res.status(500).json({ error: 'Failed to retrieve image' });
-//   }
-// }
-
 module.exports = {
   getAllStrayAnimals,
   getStrayAnimalById,
   createStrayAnimal,
   updateStrayAnimal,
   deleteStrayAnimal,
-  // uploadImage,
-  // getImage,
 }
