@@ -7,6 +7,7 @@ const azureBlobService = require('../services/azureBlobService')
 const axios = require('axios')
 require('dotenv').config({ path: '../.env' })
 const fs = require('fs')
+const AdoptionRequest = require('../models/AdoptionRequest')
 
 const { uploadImageToBlob } = require('../services/azureBlobService') // Adjust the path as needed
 
@@ -243,12 +244,78 @@ const deleteStrayAnimal = async (req, res) => {
 //   }
 // }
 
+// Post adoption request for a stray animal by ID
+const requestAdoption = async (req, res) => {
+  console.log('reqbody',req.params)
+  console.log('user',req.user)
+  console.log(req.body)
+
+  try {
+    // Check if the user is logged in
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    // Retrieve logged-in user's data
+    const loggedInUserId = req.user.userId
+    // Fetch user data from the database
+    const loggedInUser = await User.findById(loggedInUserId)
+
+    if (!loggedInUser) {
+      return res.status(404).json({ message: 'Logged-in user not found' })
+    }
+
+        // Retrieve stray animal data
+        const dataInStrayAnimal = req.params.saId
+        // Fetch user data from the database
+        const dataInSaId = await StrayAnimal.findById(dataInStrayAnimal )
+    
+        if (!dataInSaId) {
+          return res.status(404).json({ message: 'Data stray animal not found' })
+        }
+    
+    const { reqAddress, reqPhone, reqIdCard, note } = req.body;
+
+    // Create a new adoption request
+    const adoptionRequest = new AdoptionRequest({
+      owner: {
+        ownerId: dataInSaId.owner.ownerId,
+        ownerUsername: dataInSaId.owner.ownerUsername,
+        phoneNumber: dataInSaId.owner.phoneNumber,
+      },
+      animal: {
+        saId: dataInSaId._id
+      },
+      requester: {
+        reqId: loggedInUser._id,
+        reqUsername: loggedInUser.username,
+        reqName: loggedInUser.name,
+        reqAddress: loggedInUser.userAddress,
+        reqPhone: loggedInUser.phoneNumber,
+        reqIdCard: loggedInUser.idCard,
+      },
+      note,
+      createdOn: new Date(),
+    });
+
+    // Save the adoption request to the database
+    await adoptionRequest.save();
+
+    res.status(201).json({ message: 'Adoption request submitted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Unable to submit adoption request' });
+  }
+}
+
+
 module.exports = {
   getAllStrayAnimals,
   getStrayAnimalById,
   createStrayAnimal,
   updateStrayAnimal,
   deleteStrayAnimal,
+  requestAdoption,
   // uploadImage,
   // getImage,
 }

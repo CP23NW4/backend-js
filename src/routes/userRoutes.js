@@ -106,6 +106,8 @@ router.post(
       //   return true
       // })
       ,
+
+      body('homePicture').optional(),
   ],
   registerUser
 )
