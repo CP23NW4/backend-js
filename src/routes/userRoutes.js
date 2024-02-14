@@ -97,14 +97,15 @@ router.post(
     // Validate userPicture
     body('userPicture')
       .optional()
-      .custom((value, { req }) => {
-        if (req.file && req.file.size > 10 * 1024 * 1024) {
-          throw new Error(
-            'User picture size should be less than or equal to 10MB'
-          )
-        }
-        return true
-      }),
+      // .custom((value, { req }) => {
+      //   if (req.file && req.file.size > 10 * 1024 * 1024) {
+      //     throw new Error(
+      //       'User picture size should be less than or equal to 10MB'
+      //     )
+      //   }
+      //   return true
+      // })
+      ,
   ],
   registerUser
 )
