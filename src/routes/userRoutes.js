@@ -12,6 +12,7 @@ const {
 } = require('../controllers/userController')
 const User = require('../models/User')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
+const { verifyUser } = require('../middlewares/emailVerification');
 
 // User registration
 router.post(
@@ -123,5 +124,8 @@ router.delete('/:userId', authenticateUser, deleteUserById)
 
 // Edit user by ID
 router.put('/:userId', authenticateUser, editUserById)
+
+// Define the verification endpoint
+router.get('/verify/:token', verifyUser)
 
 module.exports = router

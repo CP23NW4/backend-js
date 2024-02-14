@@ -8,6 +8,8 @@ require('dotenv').config({ path: '../.env' })
 const secretKey = process.env.SECRET_KEY // Accessing the secret key from the environment variable}
 
 const { validationResult } = require('express-validator')
+const { generateVerificationToken, sendVerificationEmail } = require('../middlewares/emailVerification');
+
 
 // Register a new user
 async function registerUser(req, res) {
@@ -44,6 +46,9 @@ async function registerUser(req, res) {
         .json({ message: 'Username or email already exists' })
     }
 
+    // Generate verification token
+    const verificationToken = generateVerificationToken();
+
     // Create a new user object with required fields
     const newUser = new User({
       name,
@@ -58,13 +63,19 @@ async function registerUser(req, res) {
       userAddress: userAddress || null,
       createdOn: new Date(),
       updatedOn: new Date(),
+      verificationToken,
     })
+
     await newUser.save()
+
+    // Send verification email
+    await sendVerificationEmail(newUser.email, verificationToken);
+
 
     res
       .status(201)
-      .json({ message: 'User created successfully!', user: newUser })
-  } catch (error) {
+      .json({ message: 'User created successfully! Please verify your email address.', user: newUser })
+    } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
@@ -251,6 +262,33 @@ async function editUserById(req, res) {
     res.status(500).json({ message: err.message })
   }
 }
+
+// --------------------------------------------------------------------
+
+// --------------VERIFY EMAIL------------------------------------------
+// Step 3: Verify User Endpoint
+// async function verifyUser(req, res) {
+//   try {
+//     const { token } = req.params
+
+//     const user = await User.findOne({ verificationToken: token })
+
+//     if (!user) {
+//       return res
+//         .status(404)
+//         .json({ message: 'User not found or already verified' })
+//     }
+
+//     // Mark the user as verified
+//     user.verified = true
+//     user.verificationToken = undefined
+//     await user.save()
+
+//     res.status(200).json({ message: 'Email verified successfully' })
+//   } catch (error) {
+//     res.status(500).json({ message: error.message })
+//   }
+// }
 
 module.exports = {
   registerUser,
