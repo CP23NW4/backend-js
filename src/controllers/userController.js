@@ -64,8 +64,10 @@ async function registerUser(req, res) {
     })
     await newUser.save()
 
-    res.status(201).json({ message: 'User created successfully!', user: newUser })
-    console.log ('User created successfully!', newUser)
+    res
+      .status(201)
+      .json({ message: 'User created successfully!', user: newUser })
+    console.log('User created successfully!', newUser)
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
@@ -73,6 +75,9 @@ async function registerUser(req, res) {
 
 // Login user
 async function loginUser(req, res) {
+  console.log('Request Body:', req.body)
+  // console.log('Request User:', req.user)
+
   try {
     const { identifier, password } = req.body
 
@@ -101,6 +106,7 @@ async function loginUser(req, res) {
     const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' })
     res.status(200).json({ token })
     console.log('User:', identifier, 'logged-in successfully!')
+    console.log('---------------------------------------------')
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
@@ -120,12 +126,27 @@ async function getAllUsers(req, res) {
 // Get user by ID
 async function getUserById(req, res) {
   try {
+
+    // Retrieve logged-in user's data
+    const loggedInUserId = req.user.userId
+
+    // Fetch user data from the database
+    const loggedInUser = await User.findById(loggedInUserId)
+
+    if (!loggedInUser) {
+      return res.status(404).json({ message: 'Logged-in user not found' })
+    }
+
     const user = await User.findById(req.params.userId)
     if (!user) {
       return res.status(404).json({ message: 'User not found' })
     }
-    res.json(user)
-    console.log(user)
+     res.json({ user })
+    console.log('Logged-in userId:', loggedInUser._id)
+    console.log('Logged-in username:', loggedInUser.username)
+    console.log('---------------------------------------------')
+    console.log('Requested user:', user)
+    console.log('---------------------------------------------')
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
