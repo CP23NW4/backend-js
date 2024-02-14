@@ -9,6 +9,7 @@ const {
   getUserById,
   deleteUserById,
   editUserById,
+  getLoggedInUserData,
 } = require('../controllers/userController')
 const User = require('../models/User')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
@@ -113,7 +114,7 @@ router.post(
 router.post('/login', loginUser)
 
 // Get all users
-router.get('/', authenticateUser, getAllUsers)
+// router.get('/', authenticateUser, getAllUsers)
 
 // Get user by ID
 router.get('/:userId', authenticateUser, getUserById)
@@ -123,5 +124,7 @@ router.delete('/:userId', authenticateUser, deleteUserById)
 
 // Edit user by ID
 router.put('/:userId', authenticateUser, editUserById)
+
+router.get('/', authenticateUser, getLoggedInUserData)
 
 module.exports = router

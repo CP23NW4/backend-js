@@ -103,14 +103,52 @@ async function loginUser(req, res) {
       return res.status(401).json({ message: 'Invalid password' })
     }
 
-    const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' })
-    res.status(200).json({ token })
+    // Create token payload
+    const tokenPayload = {
+      userId: user._id,
+      username: user.username, // Add any other necessary user data here
+      // Add more user data as needed
+    }
+
+    const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '1h' })
+    // const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' })
+    
+    // res.status(200).json({ token })
+    // Send the token along with user data
+    res.status(200).json({ token, user: tokenPayload })
     console.log('User:', identifier, 'logged-in successfully!')
     console.log('---------------------------------------------')
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
+
+// Get logged-in user data
+async function getLoggedInUserData(req, res) {
+  console.log(req.user)
+  try {
+    // Retrieve user data from the request object (added by middleware)
+    const userId = req.user.userId; // Extract userId from the logged-in user data
+
+    // Fetch user data from the database using the userId
+    const loggedInUser = await User.findById(userId);
+
+    if (!loggedInUser) {
+      return res.status(404).json({ message: 'Logged-in user not found' });
+    }
+
+    // Send the user data in the response
+    res.status(200).json(loggedInUser);
+    console.log(loggedInUser)
+    console.log(loggedInUser._id)
+    console.log(loggedInUser.name)
+    console.log(loggedInUser.username)
+    console.log(loggedInUser.role)
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
 
 // Get all users
 async function getAllUsers(req, res) {
@@ -282,4 +320,5 @@ module.exports = {
   getUserById,
   deleteUserById,
   editUserById,
+  getLoggedInUserData,
 }
