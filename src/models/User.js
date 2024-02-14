@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
       default: 'general'
     },
     userAddress: String,
+    homePicture: String,
     createdOn: {
       type: Date,
       default: Date.now
