@@ -8,7 +8,7 @@ const { authenticateUser } = require('../middlewares/userAuthMiddleware');
 
 const router = express.Router()
 
-const multer = require('multer');
+const multer = require('multer'); // multer is a middleware to handle form-data
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,

@@ -14,9 +14,16 @@ const {
 const User = require('../models/User')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
+const multer = require('multer'); // multer is a middleware to handle form-data
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 11 * 1024 * 1024 } // 11MB limit
+}); // create an instance of multer
+
 // User registration
 router.post(
-  '/register',
+  '/register', upload.none(),
   [
     // Validate name
     body('name')
@@ -94,17 +101,17 @@ router.post(
       .withMessage('ID card must be 13 digits'),
 
     // Validate userPicture
-    body('userPicture')
-      .optional()
-      // .custom((value, { req }) => {
-      //   if (req.file && req.file.size > 10 * 1024 * 1024) {
-      //     throw new Error(
-      //       'User picture size should be less than or equal to 10MB'
-      //     )
-      //   }
-      //   return true
-      // })
-      ,
+    // body('userPicture')
+    //   .optional()
+    //   // .custom((value, { req }) => {
+    //   //   if (req.file && req.file.size > 10 * 1024 * 1024) {
+    //   //     throw new Error(
+    //   //       'User picture size should be less than or equal to 10MB'
+    //   //     )
+    //   //   }
+    //   //   return true
+    //   // })
+    //   ,
       body('homePicture').optional(),
   ],
   registerUser
