@@ -57,6 +57,16 @@ router.put(
 
 router.delete('/:saId', authenticateUser, strayAnimalController.deleteStrayAnimal)
 
+// Route for posting adoption requests by ID
+router.post(
+  '/:saId/reqAdoption',
+    body('note').isLength({ max: 500 })
+    .withMessage('Note must be more than 500 characters'),
+   authenticateUser, strayAnimalController.requestAdoption
+   );
+
+
+
 // --------------------------------------------------------------
 
 // const multer = require('multer'); // Assuming you use multer for file uploads

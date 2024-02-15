@@ -6,8 +6,12 @@ const userSchema = new mongoose.Schema({
     userPicture: String,
     name: String,
     idCard: String,
-    username: { type: String, unique: true },
-    email: { type: String, unique: true },
+    username: { 
+      type: String, 
+      unique: true },
+    email: { 
+      type: String, 
+      unique: true },
     password: String,
     phoneNumber: String,
     DOB: Date,
