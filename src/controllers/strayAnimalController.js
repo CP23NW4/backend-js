@@ -11,9 +11,6 @@ const AdoptionRequest = require('../models/AdoptionRequest')
 
 const { uploadImageToBlob } = require('../services/azureBlobService') // Adjust the path as needed
 
-// const multer = require('multer');
-// const upload = multer(); // create an instance of multer
-
 // Get all stray animals
 const getAllStrayAnimals = async (req, res) => {
   try {
@@ -222,7 +219,8 @@ const deleteStrayAnimal = async (req, res) => {
   }
 }
 
-// ------------------------------------------------------------------
+
+// ------------------Request Adoption----------------------------------
 // const { getImageFromBlob } = require('../services/azureBlobService');
 
 // async function getImage(req, res) {

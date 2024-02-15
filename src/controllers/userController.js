@@ -55,8 +55,7 @@ async function registerUser(req, res) {
       userPicture: userPicture || null,
       idCard: idCard || null,
       DOB: DOB || null,
-      // role: 'general', // Default role
-      role: role, // Default role
+      role: role,
       userAddress: userAddress || null,
       homePicture: homePicture || null,
       createdOn: new Date(),
@@ -64,8 +63,11 @@ async function registerUser(req, res) {
     })
     await newUser.save()
 
-    res.status(201).json({ message: 'User created successfully!', user: newUser })
-    console.log ('User created successfully!', newUser)
+    res
+      .status(201)
+      .json({ message: 'User created successfully!', user: newUser })
+    console.log('User created successfully!', newUser)
+    console.log('---------------------------------------------')
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
@@ -73,6 +75,9 @@ async function registerUser(req, res) {
 
 // Login user
 async function loginUser(req, res) {
+  console.log('Request Body:', req.body)
+  // console.log('Request User:', req.user)
+
   try {
     const { identifier, password } = req.body
 
@@ -98,34 +103,82 @@ async function loginUser(req, res) {
       return res.status(401).json({ message: 'Invalid password' })
     }
 
-    const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' })
-    res.status(200).json({ token })
+    // Create token payload
+    const tokenPayload = {
+      userId: user._id,
+      username: user.username, // Add any other necessary user data here
+      // Add more user data as needed
+    }
+
+    const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '1h' })
+    res.status(200).json({ token, user: tokenPayload })
     console.log('User:', identifier, 'logged-in successfully!')
+    console.log('---------------------------------------------')
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
 
-// Get all users
-async function getAllUsers(req, res) {
+// Get logged-in user data
+async function getLoggedInUserData(req, res) {
+  console.log(req.user)
   try {
-    const users = await User.find()
-    res.json(users)
-    console.log('All users:', users)
-  } catch (err) {
-    res.status(500).json({ message: err.message })
+    // Retrieve user data from the request object (added by middleware)
+    const userId = req.user.userId // Extract userId from the logged-in user data
+
+    // Fetch user data from the database using the userId
+    const loggedInUser = await User.findById(userId)
+
+    if (!loggedInUser) {
+      return res.status(404).json({ message: 'Logged-in user not found' })
+    }
+
+    // Send the user data in the response
+    res.status(200).json(loggedInUser)
+    console.log(loggedInUser)
+    console.log(loggedInUser._id)
+    console.log(loggedInUser.name)
+    console.log(loggedInUser.username)
+    console.log(loggedInUser.role)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
   }
 }
+
+// // Get all users
+// async function getAllUsers(req, res) {
+//   try {
+//     const users = await User.find()
+//     res.json(users)
+//     console.log('All users:', users)
+//   } catch (err) {
+//     res.status(500).json({ message: err.message })
+//   }
+// }
 
 // Get user by ID
 async function getUserById(req, res) {
   try {
+    // Retrieve logged-in user's data
+    const loggedInUserId = req.user.userId
+
+    // Fetch user data from the database
+    const loggedInUser = await User.findById(loggedInUserId)
+
+    if (!loggedInUser) {
+      return res.status(404).json({ message: 'Logged-in user not found' })
+    }
+
     const user = await User.findById(req.params.userId)
     if (!user) {
       return res.status(404).json({ message: 'User not found' })
     }
-    res.json(user)
-    console.log(user)
+    res.json({ user })
+    console.log('Logged-in userId:', loggedInUser._id)
+    console.log('Logged-in username:', loggedInUser.username)
+    console.log('---------------------------------------------')
+    console.log('Requested user:', user)
+    console.log('---------------------------------------------')
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
@@ -143,7 +196,6 @@ async function deleteUserById(req, res) {
     const authenticatedUser = await User.findById(authenticatedUserId)
     const authenticatedUserRole = authenticatedUser.role
 
-    // console.log('Auth User:', authenticatedUser)
     console.log('Auth User Role:', authenticatedUserRole)
 
     // Check if userId is provided
@@ -170,6 +222,7 @@ async function deleteUserById(req, res) {
 
     res.json({ message: 'User deleted', deletedUser })
     console.log('User deleted', deletedUser)
+    console.log('---------------------------------------------')
   } catch (err) {
     res.status(500).json({ message: err.message })
   }
@@ -202,11 +255,6 @@ async function editUserById(req, res) {
     if (!user) {
       return res.status(404).json({ message: 'User not found' })
     }
-
-    // // Ensure that the authenticated user can only edit their own information
-    // if (userId !== authenticatedUserId) {
-    //   return res.status(403).json({ message: 'You are not authorized to edit this user' })
-    // }
 
     // Check if the authenticated user is an admin
     if (authenticatedUserRole !== 'admin' && userId !== authenticatedUserId) {
@@ -257,8 +305,9 @@ async function editUserById(req, res) {
 module.exports = {
   registerUser,
   loginUser,
-  getAllUsers,
+  // getAllUsers,
   getUserById,
   deleteUserById,
   editUserById,
+  getLoggedInUserData,
 }
