@@ -219,7 +219,6 @@ const deleteStrayAnimal = async (req, res) => {
   }
 }
 
-
 // ------------------Request Adoption----------------------------------
 // const { getImageFromBlob } = require('../services/azureBlobService');
 
@@ -244,8 +243,8 @@ const deleteStrayAnimal = async (req, res) => {
 
 // Post adoption request for a stray animal by ID
 const requestAdoption = async (req, res) => {
-  console.log('reqbody',req.params)
-  console.log('user',req.user)
+  console.log('reqbody', req.params)
+  console.log('user', req.user)
   console.log(req.body)
 
   try {
@@ -263,16 +262,16 @@ const requestAdoption = async (req, res) => {
       return res.status(404).json({ message: 'Logged-in user not found' })
     }
 
-        // Retrieve stray animal data
-        const dataInStrayAnimal = req.params.saId
-        // Fetch user data from the database
-        const dataInSaId = await StrayAnimal.findById(dataInStrayAnimal )
-    
-        if (!dataInSaId) {
-          return res.status(404).json({ message: 'Data stray animal not found' })
-        }
-    
-    const { reqAddress, reqPhone, reqIdCard, note } = req.body;
+    // Retrieve stray animal data
+    const dataInStrayAnimal = req.params.saId
+    // Fetch user data from the database
+    const dataInSaId = await StrayAnimal.findById(dataInStrayAnimal)
+
+    if (!dataInSaId) {
+      return res.status(404).json({ message: 'Data stray animal not found' })
+    }
+
+    const { reqAddress, reqPhone, reqIdCard, note } = req.body
 
     // Create a new adoption request
     const adoptionRequest = new AdoptionRequest({
@@ -282,7 +281,7 @@ const requestAdoption = async (req, res) => {
         phoneNumber: dataInSaId.owner.phoneNumber,
       },
       animal: {
-        saId: dataInSaId._id
+        saId: dataInSaId._id,
       },
       requester: {
         reqId: loggedInUser._id,
@@ -294,18 +293,19 @@ const requestAdoption = async (req, res) => {
       },
       note,
       createdOn: new Date(),
-    });
+    })
 
     // Save the adoption request to the database
-    await adoptionRequest.save();
+    await adoptionRequest.save()
 
-    res.status(201).json({ message: 'Adoption request submitted successfully' });
+    res.status(201).json({ message: 'Adoption request submitted successfully:', adoptionRequest })
+    console.log('Adoption request submitted successfully:', adoptionRequest)
+    console.log('---------------------------------------------')
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Unable to submit adoption request' });
+    console.error(error)
+    res.status(500).json({ message: 'Unable to submit adoption request:', error })
   }
 }
-
 
 module.exports = {
   getAllStrayAnimals,
