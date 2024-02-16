@@ -4,36 +4,44 @@ const express = require('express')
 const { body, validationResult } = require('express-validator')
 const StrayAnimal = require('../models/StrayAnimal')
 const strayAnimalController = require('../controllers/strayAnimalController')
-const { authenticateUser } = require('../middlewares/userAuthMiddleware');
+const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
 const router = express.Router()
 
-const multer = require('multer'); // multer is a middleware to handle form-data
-const storage = multer.memoryStorage();
+const multer = require('multer') // multer is a middleware to handle form-data
+const storage = multer.memoryStorage()
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 11 * 1024 * 1024 } // 11MB limit
-}); // create an instance of multer
+  limits: { fileSize: 11 * 1024 * 1024 }, // 11MB limit
+}) // create an instance of multer
 
 router.get('/', strayAnimalController.getAllStrayAnimals)
 router.get('/:saId', strayAnimalController.getStrayAnimalById)
 
 router.post(
-  '/',  upload.single('picture'),
+  '/',
+  upload.single('picture'),
   [
-    body('name').notEmpty().isLength({ min: 1, max: 20 }).matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/),
+    body('name')
+      .notEmpty()
+      .isLength({ min: 1, max: 20 })
+      .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/),
     body('type').notEmpty().isIn(['Dog', 'Cat']).isLength({ max: 5 }),
     body('gender').notEmpty().isIn(['Male', 'Female']).isLength({ max: 6 }),
-    body('color').notEmpty().matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/).custom((value, { req }) => {
-      // Custom validation for 'picture' field
-      if (!req.file) {
-        throw new Error('Picture is required.');
-      }
-      return true;
-    }),
+    body('color')
+      .notEmpty()
+      .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/)
+      .custom((value, { req }) => {
+        // Custom validation for 'picture' field
+        if (!req.file) {
+          throw new Error('Picture is required.')
+        }
+        return true
+      }),
     body('description').isLength({ max: 500 }),
   ],
-  authenticateUser, strayAnimalController.createStrayAnimal
+  authenticateUser,
+  strayAnimalController.createStrayAnimal
 )
 
 router.put(
@@ -52,20 +60,27 @@ router.put(
       .custom((value) => !/\d/.test(value)),
     body('description').optional().isLength({ max: 500 }),
   ],
-  authenticateUser, strayAnimalController.updateStrayAnimal
+  authenticateUser,
+  strayAnimalController.updateStrayAnimal
 )
 
-router.delete('/:saId', authenticateUser, strayAnimalController.deleteStrayAnimal)
+router.delete(
+  '/:saId',
+  authenticateUser,
+  strayAnimalController.deleteStrayAnimal
+)
 
 // Route for posting adoption requests by ID
 router.post(
   '/:saId/reqAdoption',
-    body('note').isLength({ max: 500 })
+  upload.none(),
+  body('note')
+    .optional()
+    .isLength({ min: 1, max: 500 })
     .withMessage('Note must be more than 500 characters'),
-   authenticateUser, strayAnimalController.requestAdoption
-   );
-
-
+  authenticateUser,
+  strayAnimalController.requestAdoption
+)
 
 // --------------------------------------------------------------
 
