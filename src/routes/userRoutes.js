@@ -24,7 +24,8 @@ const upload = multer({
 // User registration
 router.post(
   '/register',
-  upload.none(),
+  // upload.none(),
+  upload.single('userPicture'),
   [
     // Validate name
     body('name')

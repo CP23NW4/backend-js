@@ -8,6 +8,7 @@ require('dotenv').config({ path: '../.env' })
 const secretKey = process.env.SECRET_KEY // Accessing the secret key from the environment variable}
 
 const { validationResult } = require('express-validator')
+const azureBlobService = require('../services/azureBlobService') // Adjust the path as needed
 
 // Register a new user
 async function registerUser(req, res) {
@@ -19,6 +20,16 @@ async function registerUser(req, res) {
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() })
     }
+
+    // Check if picture size exceeds the limit
+    if (req.file && req.file.size > 11 * 1024 * 1024) {
+      console.log('Image size should be less than 10MB.')
+      console.log('---------------------------------------------')
+      return res
+        .status(400)
+        .json({ message: 'Image size should be less than 11MB.' })
+    }
+
     const {
       userPicture,
       name,
@@ -33,16 +44,37 @@ async function registerUser(req, res) {
       homePicture,
     } = req.body
 
+    const containerName = 'users'
+    let imageUrl
+
+    if (isExternalUrl(req.body.userPicture)) {
+      // If the picture is an external URL, use it directly
+      imageUrl = req.body.userPicture
+    } else {
+      // If the picture is part of form-data, upload it to Azure Blob Storage
+      const fileBuffer = req.file.buffer // Access the file buffer from form-data
+      const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg` // Change the filename as per your requirements
+
+      // Upload image to Azure Blob Storage
+      await azureBlobService.uploadImageToBlob(
+        fileBuffer,
+        fileName,
+        containerName
+      )
+
+      // Set the imageUrl as the Blob URL
+      imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${containerName}/${fileName}`
+    }
+
+
     // Check for required fields
     if (!name || !username || !email || !password || !phoneNumber) {
       console.log('Missing required fields')
       console.log('---------------------------------------------')
-      return res
-        .status(400)
-        .json({
-          message:
-            'Missing required fields: name, username, email, password, and phone number',
-        })
+      return res.status(400).json({
+        message:
+          'Missing required fields: name, username, email, password, and phone number',
+      })
     }
 
     const existingUser = await User.findOne({ $or: [{ username }, { email }] })
@@ -61,12 +93,12 @@ async function registerUser(req, res) {
       email,
       password,
       phoneNumber,
-      userPicture: userPicture || null,
-      idCard: idCard || null,
-      DOB: DOB || null,
+      userPicture: imageUrl,
+      idCard: idCard,
+      DOB: DOB,
       role: role,
-      userAddress: userAddress || null,
-      homePicture: homePicture || null,
+      userAddress: userAddress,
+      homePicture: homePicture,
       createdOn: new Date(),
       updatedOn: new Date(),
     })
@@ -82,6 +114,21 @@ async function registerUser(req, res) {
     console.log('---------------------------------------------')
     res.status(500).json({ message: error.message })
   }
+}
+
+// Helper function to check if a URL is external
+function isExternalUrl(url) {
+  return /^(https?:\/\/|www\.)\S+$/.test(url)
+}
+
+// Helper function to read a file asynchronously
+function readFileAsync(filePath) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(filePath, (err, data) => {
+      if (err) reject(err)
+      else resolve(data)
+    })
+  })
 }
 
 // Login user
