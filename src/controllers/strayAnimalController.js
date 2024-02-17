@@ -16,7 +16,11 @@ const getAllStrayAnimals = async (req, res) => {
   try {
     const allStrayAnimals = await StrayAnimal.find().sort({ createdOn: -1 })
     res.json(allStrayAnimals)
+    console.log('All animals:', allStrayAnimals)
+    console.log('---------------------------------------------')
   } catch (err) {
+    console.log('Can not get animals')
+    console.log('---------------------------------------------')
     res.status(500).json({ message: err.message })
   }
 }
@@ -26,10 +30,16 @@ const getStrayAnimalById = async (req, res) => {
   try {
     const strayAnimalbyId = await StrayAnimal.findById(req.params.saId)
     if (!strayAnimalbyId) {
+      console.log('Animal not founnd')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Stray animal not found' })
     }
     res.json(strayAnimalbyId)
+    console.log('Animal:', strayAnimalbyId)
+    console.log('---------------------------------------------')
   } catch (err) {
+    console.log('Can not get this animal')
+    console.log('---------------------------------------------')
     res.status(500).json({ message: err.message })
   }
 }
@@ -38,11 +48,14 @@ const getStrayAnimalById = async (req, res) => {
 const createStrayAnimal = async (req, res) => {
   console.log('Request Body:', req.body)
   console.log('Request File:', req.file)
-  console.log('Request User:', req.user)
+  console.log('Logged-in user:', req.user)
+  console.log('---------------------------------------------')
 
   try {
     // Check if the user is logged in
     if (!req.user) {
+      console.log('Unauthorized')
+      console.log('---------------------------------------------')
       return res.status(401).json({ message: 'Unauthorized' })
     }
 
@@ -53,11 +66,15 @@ const createStrayAnimal = async (req, res) => {
     const loggedInUser = await User.findById(loggedInUserId)
 
     if (!loggedInUser) {
+      console.log('Logged-in user not found')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Logged-in user not found' })
     }
 
     // Check if picture size exceeds the limit
     if (req.file && req.file.size > 11 * 1024 * 1024) {
+      console.log('Image size should be less than 10MB.')
+      console.log('---------------------------------------------')
       return res
         .status(400)
         .json({ message: 'Image size should be less than 11MB.' })
@@ -73,6 +90,8 @@ const createStrayAnimal = async (req, res) => {
     } else if (type.toLowerCase() === 'cat') {
       containerName = 'cats'
     } else {
+      console.log('Types of animal should be Dog or Cat.')
+      console.log('---------------------------------------------')
       return res.status(400).json({
         message: 'Invalid animal type. Supported types are Dog and Cat.',
       })
@@ -119,8 +138,11 @@ const createStrayAnimal = async (req, res) => {
     const savedStrayAnimal = await newStrayAnimal.save()
 
     res.status(201).json(savedStrayAnimal)
+    console.log('Animal post has been created!', savedStrayAnimal)
+    console.log('---------------------------------------------')
   } catch (error) {
     console.error(error)
+    console.log('---------------------------------------------')
     res.status(500).json({ message: 'Unable to create a new stray animal' })
   }
 }
@@ -153,15 +175,32 @@ const updateStrayAnimal = async (req, res) => {
       }
     })
 
+    console.log(specificErrors)
+    console.log('---------------------------------------------')
     return res.status(400).json(specificErrors)
   }
 
   try {
     const existingStrayAnimal = await StrayAnimal.findById(req.params.saId)
+    console.log('Animal data:', existingStrayAnimal)
+    console.log('---------------------------------------------')
 
     if (!existingStrayAnimal) {
+      console.log('Stray animal not found')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Stray animal not found' })
     }
+
+    // console.log('Owner ID:', existingStrayAnimal.owner)
+    // console.log('Logged-in User:', req.user)
+    // console.log('User ID:', req.user.userId)
+    // console.log('---------------------------------------------')
+
+    // // Check if the logged-in user is the owner of the post
+    // if (existingStrayAnimal.owner !== req.user.userId) {
+    //   console.log('Unauthorized access')
+    //   return res.status(403).json({ message: 'Unauthorized access' })
+    // }
 
     const updatedFields = {}
     const currentDate = new Date()
@@ -172,9 +211,9 @@ const updateStrayAnimal = async (req, res) => {
     if (req.body.picture) {
       updatedFields.picture = req.body.picture
     }
-    if (req.body.type) {
-      updatedFields.type = req.body.type
-    }
+    // if (req.body.type) {
+    //   updatedFields.type = req.body.type
+    // }
     if (req.body.gender) {
       updatedFields.gender = req.body.gender
     }
@@ -196,7 +235,12 @@ const updateStrayAnimal = async (req, res) => {
       { new: true }
     )
 
-    res.json(updatedStrayAnimal)
+    res.json({ message: 'Updated field:', updatedFields })
+    // res.json(updatedStrayAnimal)
+    console.log('Updated field:', updatedFields)
+    console.log('---------------------------------------------')
+    console.log('Updated animal:', updatedStrayAnimal)
+    console.log('---------------------------------------------')
   } catch (err) {
     res.status(500).json({ message: 'Error updating stray animal' })
   }
@@ -204,16 +248,17 @@ const updateStrayAnimal = async (req, res) => {
 
 // Delete a stray animal by ID
 const deleteStrayAnimal = async (req, res) => {
+  console.log('Logged-in user:', req.user)
+
   try {
-    const deletedStrayAnimal = await StrayAnimal.findByIdAndDelete(
-      req.params.saId
-    )
+    const saId = req.params.saId
+    console.log('Animal:', req.params)
 
-    if (!deletedStrayAnimal) {
-      return res.status(404).json({ message: 'Stray animal not found' })
-    }
+    const deletedStrayAnimal = await StrayAnimal.findByIdAndDelete(saId)
 
-    res.json({ message: 'Stray animal deleted' })
+    res.json({ message: 'Stray animal deleted:', deletedStrayAnimal })
+    console.log('Animal deleted', deletedStrayAnimal)
+    console.log('---------------------------------------------')
   } catch (err) {
     res.status(500).json({ message: 'Error deleting stray animal' })
   }
@@ -243,13 +288,16 @@ const deleteStrayAnimal = async (req, res) => {
 
 // Post adoption request for a stray animal by ID
 const requestAdoption = async (req, res) => {
-  console.log('reqbody', req.params)
-  console.log('user', req.user)
-  console.log(req.body)
+  console.log('Animal:', req.params)
+  console.log('Logged-in user:', req.user)
+  // console.log(req.body)
+  console.log('---------------------------------------------')
 
   try {
     // Check if the user is logged in
     if (!req.user) {
+      console.log('Unauthorized')
+      console.log('---------------------------------------------')
       return res.status(401).json({ message: 'Unauthorized' })
     }
 
@@ -259,6 +307,8 @@ const requestAdoption = async (req, res) => {
     const loggedInUser = await User.findById(loggedInUserId)
 
     if (!loggedInUser) {
+      console.log('Logged-in user not found')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Logged-in user not found' })
     }
 
@@ -268,6 +318,8 @@ const requestAdoption = async (req, res) => {
     const dataInSaId = await StrayAnimal.findById(dataInStrayAnimal)
 
     if (!dataInSaId) {
+      console.log('Animal not found')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Data stray animal not found' })
     }
 
@@ -298,12 +350,15 @@ const requestAdoption = async (req, res) => {
     // Save the adoption request to the database
     await adoptionRequest.save()
 
-    res.status(201).json({ message: 'Adoption request submitted successfully:', adoptionRequest })
+    res.status(201).json({
+      message: 'Adoption request submitted successfully:',
+      adoptionRequest,
+    })
     console.log('Adoption request submitted successfully:', adoptionRequest)
     console.log('---------------------------------------------')
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Unable to submit adoption request:', error })
+    console.error('Unable to submit adoption request', error)
+    res.status(500).json({ message: 'Unable to submit adoption request' })
   }
 }
 

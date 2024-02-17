@@ -35,11 +35,20 @@ async function registerUser(req, res) {
 
     // Check for required fields
     if (!name || !username || !email || !password || !phoneNumber) {
-      return res.status(400).json({ message: 'Missing required fields' })
+      console.log('Missing required fields')
+      console.log('---------------------------------------------')
+      return res
+        .status(400)
+        .json({
+          message:
+            'Missing required fields: name, username, email, password, and phone number',
+        })
     }
 
     const existingUser = await User.findOne({ $or: [{ username }, { email }] })
     if (existingUser) {
+      console.log('Username or email already exists')
+      console.log('---------------------------------------------')
       return res
         .status(400)
         .json({ message: 'Username or email already exists' })
@@ -69,6 +78,8 @@ async function registerUser(req, res) {
     console.log('User created successfully!', newUser)
     console.log('---------------------------------------------')
   } catch (error) {
+    console.log(error)
+    console.log('---------------------------------------------')
     res.status(500).json({ message: error.message })
   }
 }
@@ -76,16 +87,18 @@ async function registerUser(req, res) {
 // Login user
 async function loginUser(req, res) {
   console.log('Request Body:', req.body)
-  // console.log('Request User:', req.user)
+  console.log('---------------------------------------------')
 
   try {
     const { identifier, password } = req.body
 
     // Check for required fields
     if (!identifier || !password) {
+      console.log('Username or Email, and password are required')
+      console.log('---------------------------------------------')
       return res
         .status(400)
-        .json({ message: 'Username/Email and password are required' })
+        .json({ message: 'Username or Email, and password are required' })
     }
 
     const user = await User.findOne({
@@ -93,6 +106,8 @@ async function loginUser(req, res) {
     })
 
     if (!user) {
+      console.log('User not found')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'User not found' })
     }
 
@@ -100,6 +115,8 @@ async function loginUser(req, res) {
     const isPasswordValid = await bcrypt.compare(password, user.password)
 
     if (!isPasswordValid) {
+      console.log('Invalid password')
+      console.log('---------------------------------------------')
       return res.status(401).json({ message: 'Invalid password' })
     }
 
@@ -115,13 +132,16 @@ async function loginUser(req, res) {
     console.log('User:', identifier, 'logged-in successfully!')
     console.log('---------------------------------------------')
   } catch (error) {
+    console.log(error)
+    console.log('---------------------------------------------')
     res.status(500).json({ message: error.message })
   }
 }
 
 // Get logged-in user data
 async function getLoggedInUserData(req, res) {
-  console.log(req.user)
+  console.log('Logged-in user:', req.user)
+  console.log('---------------------------------------------')
   try {
     // Retrieve user data from the request object (added by middleware)
     const userId = req.user.userId // Extract userId from the logged-in user data
@@ -130,6 +150,8 @@ async function getLoggedInUserData(req, res) {
     const loggedInUser = await User.findById(userId)
 
     if (!loggedInUser) {
+      console.log('Logged-in user not found')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Logged-in user not found' })
     }
 
@@ -140,7 +162,9 @@ async function getLoggedInUserData(req, res) {
     console.log(loggedInUser.name)
     console.log(loggedInUser.username)
     console.log(loggedInUser.role)
+    console.log('---------------------------------------------')
   } catch (error) {
+    console.log(error)
     res.status(500).json({ message: error.message })
   }
 }
@@ -166,11 +190,15 @@ async function getUserById(req, res) {
     const loggedInUser = await User.findById(loggedInUserId)
 
     if (!loggedInUser) {
+      console.log('Logged-in user not found')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Logged-in user not found' })
     }
 
     const user = await User.findById(req.params.userId)
     if (!user) {
+      console.log('User not found')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'User not found' })
     }
     res.json({ user })
@@ -180,6 +208,8 @@ async function getUserById(req, res) {
     console.log('Requested user:', user)
     console.log('---------------------------------------------')
   } catch (err) {
+    console.log(err)
+    console.log('---------------------------------------------')
     res.status(500).json({ message: err.message })
   }
 }
@@ -187,6 +217,7 @@ async function getUserById(req, res) {
 // Delete user by ID
 async function deleteUserById(req, res) {
   console.log('Request User:', req.user.userId)
+  console.log('---------------------------------------------')
 
   try {
     const userId = req.params.userId
@@ -197,9 +228,12 @@ async function deleteUserById(req, res) {
     const authenticatedUserRole = authenticatedUser.role
 
     console.log('Auth User Role:', authenticatedUserRole)
+    console.log('---------------------------------------------')
 
     // Check if userId is provided
     if (!userId) {
+      console.log('User ID is required')
+      console.log('---------------------------------------------')
       return res.status(400).json({ message: 'User ID is required' })
     }
 
@@ -207,11 +241,15 @@ async function deleteUserById(req, res) {
     const user = await User.findById(userId)
 
     if (!user) {
+      console.log('User not found')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'User not found' })
     }
 
     // Check if the authenticated user is an admin
     if (authenticatedUserRole !== 'admin' && userId !== authenticatedUserId) {
+      console.log('You are not authorized to delete this user')
+      console.log('---------------------------------------------')
       return res
         .status(403)
         .json({ message: 'You are not authorized to delete this user' })
@@ -224,6 +262,8 @@ async function deleteUserById(req, res) {
     console.log('User deleted', deletedUser)
     console.log('---------------------------------------------')
   } catch (err) {
+    console.log(err)
+    console.log('---------------------------------------------')
     res.status(500).json({ message: err.message })
   }
 }
@@ -232,6 +272,7 @@ async function deleteUserById(req, res) {
 async function editUserById(req, res) {
   console.log('Request Body:', req.body)
   console.log('Request User:', req.user.userId)
+  console.log('---------------------------------------------')
 
   try {
     const userId = req.params.userId
@@ -246,6 +287,8 @@ async function editUserById(req, res) {
 
     // Check if userId is provided
     if (!userId) {
+      console.log('User ID is required')
+      console.log('---------------------------------------------')
       return res.status(400).json({ message: 'User ID is required' })
     }
 
@@ -253,11 +296,15 @@ async function editUserById(req, res) {
     const user = await User.findById(userId)
 
     if (!user) {
+      console.log('User not found')
+      console.log('---------------------------------------------')
       return res.status(404).json({ message: 'User not found' })
     }
 
     // Check if the authenticated user is an admin
     if (authenticatedUserRole !== 'admin' && userId !== authenticatedUserId) {
+      console.log('You are not authorized to edit this user')
+      console.log('---------------------------------------------')
       return res
         .status(403)
         .json({ message: 'You are not authorized to edit this user' })
@@ -297,7 +344,10 @@ async function editUserById(req, res) {
 
     res.json({ message: 'User updated', user })
     console.log('User updated:', user)
+    console.log('---------------------------------------------')
   } catch (err) {
+    console.log(err)
+    console.log('---------------------------------------------')
     res.status(500).json({ message: err.message })
   }
 }

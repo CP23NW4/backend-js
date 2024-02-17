@@ -14,16 +14,17 @@ const {
 const User = require('../models/User')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
-const multer = require('multer'); // multer is a middleware to handle form-data
-const storage = multer.memoryStorage();
+const multer = require('multer') // multer is a middleware to handle form-data
+const storage = multer.memoryStorage()
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 11 * 1024 * 1024 } // 11MB limit
-}); // create an instance of multer
+  limits: { fileSize: 11 * 1024 * 1024 }, // 11MB limit
+}) // create an instance of multer
 
 // User registration
 router.post(
-  '/register', upload.none(),
+  '/register',
+  upload.none(),
   [
     // Validate name
     body('name')
@@ -112,7 +113,7 @@ router.post(
     //   //   return true
     //   // })
     //   ,
-      body('homePicture').optional(),
+    body('homePicture').optional(),
   ],
   registerUser
 )
