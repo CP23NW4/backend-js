@@ -6,6 +6,7 @@ const User = require('../models/User')
 const azureBlobService = require('../services/azureBlobService')
 const axios = require('axios')
 require('dotenv').config({ path: '../.env' })
+const jwt = require('jsonwebtoken')
 const fs = require('fs')
 const AdoptionRequest = require('../models/AdoptionRequest')
 
@@ -48,28 +49,40 @@ const getStrayAnimalById = async (req, res) => {
 const createStrayAnimal = async (req, res) => {
   console.log('Request Body:', req.body)
   console.log('Request File:', req.file)
-  console.log('Logged-in user:', req.user)
+  // console.log('Logged-in user:', loggedInUser)
   console.log('---------------------------------------------')
 
   try {
-    // Check if the user is logged in
-    if (!req.user) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
+    // Get logged-in user data
+    // Retrieve user data from the request object (added by middleware)
+    const userId = req.user.userId // Extract userId from the logged-in user data
 
-    // Retrieve logged-in user's data
-    const loggedInUserId = req.user.userId
-
-    // Fetch user data from the database
-    const loggedInUser = await User.findById(loggedInUserId)
+    // Fetch user data from the database using the userId
+    const loggedInUser = await User.findById(userId)
+    console.log(loggedInUser.name)
+    console.log(loggedInUser.username)
+    console.log(loggedInUser.role)
+    console.log('---------------------------------------------')
 
     if (!loggedInUser) {
       console.log('Logged-in user not found')
       console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Logged-in user not found' })
     }
+
+    // Check if the user is logged in
+    if (!loggedInUser) {
+      console.log('Unauthorized')
+      console.log('---------------------------------------------')
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    // // Check user role for permissions
+    // if (loggedInUser.role !== 'general') {  // only users with the "general" role can create
+    //   console.log('Insufficient permissions')
+    //   console.log('---------------------------------------------')
+    //   return res.status(403).json({ message: 'Insufficient permissions' })
+    // }
 
     // Check if picture size exceeds the limit
     if (req.file && req.file.size > 11 * 1024 * 1024) {
@@ -130,6 +143,7 @@ const createStrayAnimal = async (req, res) => {
         ownerId: loggedInUser._id,
         ownerUsername: loggedInUser.username,
         phoneNumber: loggedInUser.phoneNumber,
+        role: loggedInUser.role,
       },
       createdOn: new Date(),
     })
@@ -181,26 +195,48 @@ const updateStrayAnimal = async (req, res) => {
   }
 
   try {
-    const existingStrayAnimal = await StrayAnimal.findById(req.params.saId)
-    console.log('Animal data:', existingStrayAnimal)
+    // Retrieve logged-in user's data
+    const userId = req.user.userId
+    console.log('User ID:', userId)
+    // console.log('---------------------------------------------')
+    const loggedInUser = await User.findById(userId)
+ 
+    // Check if the user is logged in
+    if (!loggedInUser) {
+      console.log('Unauthorized')
+      console.log('---------------------------------------------')
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    const loggedInUserId = loggedInUser._id
+    // const loggedInUserUsername = loggedInUser.username
+    const loggedInUserRole = loggedInUser.role
+    console.log('Logged-in ID:', loggedInUserId)
+    console.log('Logged-in role:', loggedInUserRole)
     console.log('---------------------------------------------')
 
+    const existingStrayAnimal = await StrayAnimal.findById(req.params.saId)
+    
+    
     if (!existingStrayAnimal) {
       console.log('Stray animal not found')
       console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Stray animal not found' })
     }
-
-    // console.log('Owner ID:', existingStrayAnimal.owner)
-    // console.log('Logged-in User:', req.user)
-    // console.log('User ID:', req.user.userId)
-    // console.log('---------------------------------------------')
-
-    // // Check if the logged-in user is the owner of the post
-    // if (existingStrayAnimal.owner !== req.user.userId) {
-    //   console.log('Unauthorized access')
-    //   return res.status(403).json({ message: 'Unauthorized access' })
-    // }
+    
+    const existingStrayAnimalOwnerId = existingStrayAnimal.owner.ownerId
+    console.log('Animal owner:', existingStrayAnimalOwnerId)
+    // console.log('Animal data:', existingStrayAnimal)
+    console.log('---------------------------------------------')
+    
+    // Check if the authenticated user is an admin
+    if (loggedInUserRole !== 'admin' && existingStrayAnimalOwnerId !== userId) {
+      console.log('You are not authorized to edit this animal')
+      console.log('---------------------------------------------')
+      return res
+        .status(403)
+        .json({ message: 'You are not authorized to edit this animal' })
+    }
 
     const updatedFields = {}
     const currentDate = new Date()
@@ -251,6 +287,48 @@ const deleteStrayAnimal = async (req, res) => {
   console.log('Logged-in user:', req.user)
 
   try {
+    // Retrieve logged-in user's data
+    const userId = req.user.userId
+    console.log('User ID:', userId)
+    // console.log('---------------------------------------------')
+    const loggedInUser = await User.findById(userId)
+
+    // Check if the user is logged in
+    if (!loggedInUser) {
+      console.log('Unauthorized')
+      console.log('---------------------------------------------')
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    const loggedInUserId = loggedInUser._id
+    const loggedInUserRole = loggedInUser.role
+    console.log('Logged-in ID:', loggedInUserId)
+    console.log('Logged-in role:', loggedInUserRole)
+    console.log('---------------------------------------------')
+
+    const existingStrayAnimal = await StrayAnimal.findById(req.params.saId)
+    
+    
+    if (!existingStrayAnimal) {
+      console.log('Stray animal not found')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'Stray animal not found' })
+    }
+
+    const existingStrayAnimalOwnerId = existingStrayAnimal.owner.ownerId
+    console.log('Animal owner:', existingStrayAnimalOwnerId)
+    // console.log('Animal data:', existingStrayAnimal)
+    console.log('---------------------------------------------')
+
+    // Check if the authenticated user is an admin
+    if (loggedInUserRole !== 'admin' && existingStrayAnimalOwnerId !== userId) {
+      console.log('You are not authorized to edit this animal')
+      console.log('---------------------------------------------')
+      return res
+        .status(403)
+        .json({ message: 'You are not authorized to edit this animal' })
+    }
+
     const saId = req.params.saId
     console.log('Animal:', req.params)
 
