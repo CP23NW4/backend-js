@@ -3,9 +3,15 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
 
 const userSchema = new mongoose.Schema({
-  userPicture: String,
+  userPicture: {
+    type: String,
+    default: null,
+  },
   name: String,
-  idCard: String,
+  idCard: {
+    type: String,
+    default: null,
+  },
   username: {
     type: String,
     unique: true,
@@ -16,13 +22,22 @@ const userSchema = new mongoose.Schema({
   },
   password: String,
   phoneNumber: String,
-  DOB: Date,
+  DOB: {
+    type: Date,
+    default: null,
+  },
   role: {
     type: String,
     default: 'general',
   },
-  userAddress: String,
-  homePicture: String,
+  userAddress: {
+    type: String,
+    default: null,
+  },
+  homePicture: {
+    type: String,
+    default: null,
+  },
   createdOn: {
     type: Date,
     default: Date.now,
