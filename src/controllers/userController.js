@@ -12,6 +12,7 @@ const azureBlobService = require('../services/azureBlobService') // Adjust the p
 
 // Register a new user
 async function registerUser(req, res) {
+  console.log('Request file:', req.file)
   try {
     const errors = validationResult(req).formatWith(({ value, msg }) => ({
       value,
@@ -21,14 +22,14 @@ async function registerUser(req, res) {
       return res.status(400).json({ errors: errors.array() })
     }
 
-    // Check if picture size exceeds the limit
-    if (req.file && req.file.size > 11 * 1024 * 1024) {
-      console.log('Image size should be less than 10MB.')
-      console.log('---------------------------------------------')
-      return res
-        .status(400)
-        .json({ message: 'Image size should be less than 11MB.' })
-    }
+    // // Check if picture size exceeds the limit
+    // if (req.file && req.file.size > 11 * 1024 * 1024) {
+    //   console.log('Image size should be less than 10MB.')
+    //   console.log('---------------------------------------------')
+    //   return res
+    //     .status(400)
+    //     .json({ message: 'Image size should be less than 11MB.' })
+    // }
 
     const {
       userPicture,
@@ -47,10 +48,10 @@ async function registerUser(req, res) {
     const containerName = 'users'
     let imageUrl
 
-    if (isExternalUrl(req.body.userPicture)) {
+    if (userPicture && isExternalUrl(userPicture)) {
       // If the picture is an external URL, use it directly
-      imageUrl = req.body.userPicture
-    } else {
+      imageUrl = userPicture
+    } else if (req.file) {
       // If the picture is part of form-data, upload it to Azure Blob Storage
       const fileBuffer = req.file.buffer // Access the file buffer from form-data
       const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg` // Change the filename as per your requirements
@@ -65,7 +66,6 @@ async function registerUser(req, res) {
       // Set the imageUrl as the Blob URL
       imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${containerName}/${fileName}`
     }
-
 
     // Check for required fields
     if (!name || !username || !email || !password || !phoneNumber) {
@@ -87,13 +87,13 @@ async function registerUser(req, res) {
     }
 
     // Create a new user object with required fields
-    const newUser = new User({
+    const newUserFields = new User({
       name,
       username,
       email,
       password,
       phoneNumber,
-      userPicture: imageUrl,
+      // userPicture: imageUrl,
       idCard: idCard,
       DOB: DOB,
       role: role,
@@ -102,6 +102,11 @@ async function registerUser(req, res) {
       createdOn: new Date(),
       updatedOn: new Date(),
     })
+    // Conditionally include userPicture if imageUrl is defined
+    if (imageUrl) {
+      newUserFields.userPicture = imageUrl
+    }
+    const newUser = new User(newUserFields)
     await newUser.save()
 
     res
