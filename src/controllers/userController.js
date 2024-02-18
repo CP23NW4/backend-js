@@ -293,13 +293,13 @@ async function deleteUserById(req, res) {
     const existingUserData = await User.findById(req.params.userId)
     console.log('user post:', existingUserData)
     console.log('---------------------------------------------')
-    
+
     const existingUserId = existingUserData._id
     console.log('user post ID:', existingUserId)
     console.log('---------------------------------------------')
-  
-     // Check if the authenticated user is an admin
-     if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
+
+    // Check if the authenticated user is an admin
+    if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
       console.log('You are not authorized to delete this user')
       console.log('---------------------------------------------')
       return res
@@ -356,13 +356,13 @@ async function editUserById(req, res) {
     const existingUserData = await User.findById(req.params.userId)
     console.log('user post:', existingUserData)
     console.log('---------------------------------------------')
-    
+
     const existingUserId = existingUserData._id
     console.log('user post ID:', existingUserId)
     console.log('---------------------------------------------')
-  
-     // Check if the authenticated user is an admin
-     if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
+
+    // Check if the authenticated user is an admin
+    if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
       console.log('You are not authorized to edit this user')
       console.log('---------------------------------------------')
       return res
@@ -412,8 +412,6 @@ async function editUserById(req, res) {
   }
 }
 
-
-
 // Edit Logged in user - Placeholder for future use (using PUT)
 async function editLoggedInUser(req, res) {
   console.log('Request Body:', req.body)
@@ -443,13 +441,13 @@ async function editLoggedInUser(req, res) {
     const existingUserData = await User.findById(loggedInUser)
     console.log('user post:', existingUserData)
     console.log('---------------------------------------------')
-    
+
     const existingUserId = existingUserData._id.toString()
     console.log('user post ID:', existingUserId)
     console.log('---------------------------------------------')
- 
-     // Check if the authenticated user is an admin
-     if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
+
+    // Check if the authenticated user is an admin
+    if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
       console.log('You are not authorized to edit this user')
       console.log('---------------------------------------------')
       return res
@@ -467,7 +465,7 @@ async function editLoggedInUser(req, res) {
     if (req.body.phoneNumber) {
       updatedFields.phoneNumber = req.body.phoneNumber
     }
-  
+
     // If there are fields to update, add/update the 'updatedOn' field
     if (Object.keys(updatedFields).length > 0) {
       updatedFields.updatedOn = currentDate
@@ -491,15 +489,11 @@ async function editLoggedInUser(req, res) {
 
 // Delete user by ID
 async function deleteLoggedInUser(req, res) {
-  console.log('Request Body:', req.body)
   console.log('Request User:', req.user)
   console.log('---------------------------------------------')
 
   try {
-    const userId = req.user.userId
-    console.log('User ID:', userId)
-    // console.log('---------------------------------------------')
-    const loggedInUser = await User.findById(userId)
+    const loggedInUser = await User.findById(req.user.userId)
 
     // Check if the user is logged in
     if (!loggedInUser) {
@@ -508,21 +502,27 @@ async function deleteLoggedInUser(req, res) {
       return res.status(401).json({ message: 'Unauthorized' })
     }
 
+    const loggedInUserId = loggedInUser._id.toString()
+    const loggedInUserUname = loggedInUser.username
     const loggedInUserRole = loggedInUser.role
-    // console.log('Logged-in ID:', loggedInUserId)
+    console.log('Logged-in ID:', loggedInUserId)
+    console.log('Logged-in username:', loggedInUserUname)
     console.log('Logged-in role:', loggedInUserRole)
     console.log('---------------------------------------------')
 
+    // Check if the user is logged in and request is matches or not
     const existingUserData = await User.findById(loggedInUser)
-    console.log('user post:', existingUserData)
-    console.log('---------------------------------------------')
-    
+    // console.log('user post:', existingUserData)
+    // console.log('---------------------------------------------')
+
     const existingUserId = existingUserData._id.toString()
-    console.log('user post ID:', existingUserId)
+    console.log('user account ID:', existingUserId)
+    console.log('username:', existingUserData.username)
+    console.log('email:', existingUserData.email)
     console.log('---------------------------------------------')
-  
-     // Check if the authenticated user is an admin
-     if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
+
+    // Check if the authenticated user is an admin
+    if (loggedInUserRole !== 'admin' && existingUserId !== loggedInUserId) {
       console.log('You are not authorized to delete this user')
       console.log('---------------------------------------------')
       return res
@@ -530,20 +530,15 @@ async function deleteLoggedInUser(req, res) {
         .json({ message: 'You are not authorized to delete this user' })
     }
 
-    // Find the user by userId
-    const user = await User.findById(existingUserId)
-
-    if (!user) {
-      console.log('User not found')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'User not found' })
-    }
-
     // Find the user by userId and delete
     const deletedUser = await User.findByIdAndDelete(existingUserId)
 
     res.json({ message: 'User deleted:', deletedUser })
-    console.log('User deleted', deletedUser)
+    console.log('User deleted:', {
+      ID: deletedUser._id.toString(),
+      username: deletedUser.username,
+    })
+    // console.log('User deleted:', deletedUser.username)
     console.log('---------------------------------------------')
   } catch (err) {
     console.log(err)
