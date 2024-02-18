@@ -200,7 +200,7 @@ const updateStrayAnimal = async (req, res) => {
     console.log('User ID:', userId)
     // console.log('---------------------------------------------')
     const loggedInUser = await User.findById(userId)
- 
+
     // Check if the user is logged in
     if (!loggedInUser) {
       console.log('Unauthorized')
@@ -216,19 +216,18 @@ const updateStrayAnimal = async (req, res) => {
     console.log('---------------------------------------------')
 
     const existingStrayAnimal = await StrayAnimal.findById(req.params.saId)
-    
-    
+
     if (!existingStrayAnimal) {
       console.log('Stray animal not found')
       console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Stray animal not found' })
     }
-    
+
     const existingStrayAnimalOwnerId = existingStrayAnimal.owner.ownerId
     console.log('Animal owner:', existingStrayAnimalOwnerId)
     // console.log('Animal data:', existingStrayAnimal)
     console.log('---------------------------------------------')
-    
+
     // Check if the authenticated user is an admin
     if (loggedInUserRole !== 'admin' && existingStrayAnimalOwnerId !== userId) {
       console.log('You are not authorized to edit this animal')
@@ -307,8 +306,7 @@ const deleteStrayAnimal = async (req, res) => {
     console.log('---------------------------------------------')
 
     const existingStrayAnimal = await StrayAnimal.findById(req.params.saId)
-    
-    
+
     if (!existingStrayAnimal) {
       console.log('Stray animal not found')
       console.log('---------------------------------------------')

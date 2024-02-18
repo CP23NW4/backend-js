@@ -22,14 +22,14 @@ async function registerUser(req, res) {
       return res.status(400).json({ errors: errors.array() })
     }
 
-    // // Check if picture size exceeds the limit
-    // if (req.file && req.file.size > 11 * 1024 * 1024) {
-    //   console.log('Image size should be less than 10MB.')
-    //   console.log('---------------------------------------------')
-    //   return res
-    //     .status(400)
-    //     .json({ message: 'Image size should be less than 11MB.' })
-    // }
+    // Check if picture size exceeds the limit
+    if (req.file && req.file.size > 11 * 1024 * 1024) {
+      console.log('Image size should be less than 10MB.')
+      console.log('---------------------------------------------')
+      return res
+        .status(400)
+        .json({ message: 'Image size should be less than 10MB.' })
+    }
 
     const {
       userPicture,
