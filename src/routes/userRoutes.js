@@ -130,7 +130,7 @@ router.post(
 router.post('/login', loginUser)
 
 // Get all users
-// router.get('/', authenticateUser, getAllUsers)
+router.get('/all', authenticateUser, getAllUsers)
 
 // Get user by ID
 router.get('/:userId', authenticateUser, getUserById)

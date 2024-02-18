@@ -221,16 +221,19 @@ async function getLoggedInUserData(req, res) {
   }
 }
 
-// // Get all users
-// async function getAllUsers(req, res) {
-//   try {
-//     const users = await User.find()
-//     res.json(users)
-//     console.log('All users:', users)
-//   } catch (err) {
-//     res.status(500).json({ message: err.message })
-//   }
-// }
+// Get all users
+async function getAllUsers(req, res) {
+  try {
+    const users = await User.find()
+    res.json(users)
+    console.log('All users:', users)
+    console.log('---------------------------------------------')
+  } catch (err) {
+    console.log(err)
+    console.log('---------------------------------------------')
+    res.status(500).json({ message: err.message })
+  }
+}
 
 // Get user by ID
 async function getUserById(req, res) {
@@ -550,7 +553,7 @@ async function deleteLoggedInUser(req, res) {
 module.exports = {
   registerUser,
   loginUser,
-  // getAllUsers,
+  getAllUsers,
   getUserById,
   deleteUserById,
   editUserById,
