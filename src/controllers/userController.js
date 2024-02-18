@@ -268,38 +268,38 @@ async function getUserById(req, res) {
 
 // Delete user by ID
 async function deleteUserById(req, res) {
-  console.log('Request User:', req.user.userId)
+  console.log('Request Body:', req.body)
+  console.log('Request User:', req.user)
   console.log('---------------------------------------------')
 
   try {
-    const userId = req.params.userId
-    const authenticatedUserId = req.user.userId // Assuming you have the authenticated user's ID stored in req.user.userId
+    const userId = req.user.userId
+    console.log('User ID:', userId)
+    // console.log('---------------------------------------------')
+    const loggedInUser = await User.findById(userId)
 
-    // Retrieve the authenticated user's role from the database or wherever it's stored
-    const authenticatedUser = await User.findById(authenticatedUserId)
-    const authenticatedUserRole = authenticatedUser.role
+    // Check if the user is logged in
+    if (!loggedInUser) {
+      console.log('Unauthorized')
+      console.log('---------------------------------------------')
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
 
-    console.log('Auth User Role:', authenticatedUserRole)
+    const loggedInUserRole = loggedInUser.role
+    // console.log('Logged-in ID:', loggedInUserId)
+    console.log('Logged-in role:', loggedInUserRole)
     console.log('---------------------------------------------')
 
-    // Check if userId is provided
-    if (!userId) {
-      console.log('User ID is required')
-      console.log('---------------------------------------------')
-      return res.status(400).json({ message: 'User ID is required' })
-    }
-
-    // Find the user by userId
-    const user = await User.findById(userId)
-
-    if (!user) {
-      console.log('User not found')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'User not found' })
-    }
-
-    // Check if the authenticated user is an admin
-    if (authenticatedUserRole !== 'admin' && userId !== authenticatedUserId) {
+    const existingUserData = await User.findById(req.params.userId)
+    console.log('user post:', existingUserData)
+    console.log('---------------------------------------------')
+    
+    const existingUserId = existingUserData._id
+    console.log('user post ID:', existingUserId)
+    console.log('---------------------------------------------')
+  
+     // Check if the authenticated user is an admin
+     if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
       console.log('You are not authorized to delete this user')
       console.log('---------------------------------------------')
       return res
@@ -307,10 +307,19 @@ async function deleteUserById(req, res) {
         .json({ message: 'You are not authorized to delete this user' })
     }
 
-    // Find the user by userId and delete
-    const deletedUser = await User.findByIdAndDelete(userId)
+    // Find the user by userId
+    const user = await User.findById(existingUserId)
 
-    res.json({ message: 'User deleted', deletedUser })
+    if (!user) {
+      console.log('User not found')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    // Find the user by userId and delete
+    const deletedUser = await User.findByIdAndDelete(existingUserId)
+
+    res.json({ message: 'User deleted:', deletedUser })
     console.log('User deleted', deletedUser)
     console.log('---------------------------------------------')
   } catch (err) {
@@ -323,25 +332,42 @@ async function deleteUserById(req, res) {
 // Edit user by ID - Placeholder for future use (using PUT)
 async function editUserById(req, res) {
   console.log('Request Body:', req.body)
-  console.log('Request User:', req.user.userId)
+  console.log('Request User:', req.user)
   console.log('---------------------------------------------')
 
   try {
-    const userId = req.params.userId
-    const authenticatedUserId = req.user.userId // Assuming you have the authenticated user's ID stored in req.user.id
+    const userId = req.user.userId
+    console.log('User ID:', userId)
+    // console.log('---------------------------------------------')
+    const loggedInUser = await User.findById(userId)
 
-    // Retrieve the authenticated user's role from the database or wherever it's stored
-    const authenticatedUser = await User.findById(authenticatedUserId)
-    const authenticatedUserRole = authenticatedUser.role
-
-    // console.log('Auth User:', authenticatedUser)
-    console.log('Auth User Role:', authenticatedUserRole)
-
-    // Check if userId is provided
-    if (!userId) {
-      console.log('User ID is required')
+    // Check if the user is logged in
+    if (!loggedInUser) {
+      console.log('Unauthorized')
       console.log('---------------------------------------------')
-      return res.status(400).json({ message: 'User ID is required' })
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    const loggedInUserRole = loggedInUser.role
+    // console.log('Logged-in ID:', loggedInUserId)
+    console.log('Logged-in role:', loggedInUserRole)
+    console.log('---------------------------------------------')
+
+    const existingUserData = await User.findById(req.params.userId)
+    console.log('user post:', existingUserData)
+    console.log('---------------------------------------------')
+    
+    const existingUserId = existingUserData._id
+    console.log('user post ID:', existingUserId)
+    console.log('---------------------------------------------')
+  
+     // Check if the authenticated user is an admin
+     if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
+      console.log('You are not authorized to edit this user')
+      console.log('---------------------------------------------')
+      return res
+        .status(403)
+        .json({ message: 'You are not authorized to edit this user' })
     }
 
     // Find the user by userId
@@ -353,8 +379,77 @@ async function editUserById(req, res) {
       return res.status(404).json({ message: 'User not found' })
     }
 
-    // Check if the authenticated user is an admin
-    if (authenticatedUserRole !== 'admin' && userId !== authenticatedUserId) {
+    const updatedFields = {}
+    const currentDate = new Date()
+
+    if (req.body.userAddress) {
+      updatedFields.userAddress = req.body.userAddress
+    }
+
+    if (req.body.phoneNumber) {
+      updatedFields.phoneNumber = req.body.phoneNumber
+    }
+
+    // If there are fields to update, add/update the 'updatedOn' field
+    if (Object.keys(updatedFields).length > 0) {
+      updatedFields.updatedOn = currentDate
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.userId,
+      { $set: updatedFields },
+      { new: true }
+    )
+
+    res.json({ message: 'Updated field:', updatedFields })
+    // res.json(updatedStrayAnimal)
+    console.log('Updated field:', updatedFields)
+    console.log('---------------------------------------------')
+    console.log('Updated animal:', updatedUser)
+    console.log('---------------------------------------------')
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating stray animal' })
+  }
+}
+
+
+
+// Edit Logged in user - Placeholder for future use (using PUT)
+async function editLoggedInUser(req, res) {
+  console.log('Request Body:', req.body)
+  console.log('Request User:', req.user)
+  console.log('---------------------------------------------')
+
+  try {
+    const userId = req.user.userId
+    console.log('User ID:', userId)
+    // console.log('---------------------------------------------')
+    const loggedInUser = await User.findById(userId)
+
+    // Check if the user is logged in
+    if (!loggedInUser) {
+      console.log('Unauthorized')
+      console.log('---------------------------------------------')
+      return res.status(401).json({ message: 'Unauthorized' })
+    }
+
+    // const loggedInUserId = loggedInUser._id
+    // // const loggedInUserUsername = loggedInUser.username
+    const loggedInUserRole = loggedInUser.role
+    // console.log('Logged-in ID:', loggedInUserId)
+    console.log('Logged-in role:', loggedInUserRole)
+    console.log('---------------------------------------------')
+
+    const existingUserData = await User.findById(loggedInUser)
+    console.log('user post:', existingUserData)
+    console.log('---------------------------------------------')
+    
+    const existingUserId = existingUserData._id.toString()
+    console.log('user post ID:', existingUserId)
+    console.log('---------------------------------------------')
+ 
+     // Check if the authenticated user is an admin
+     if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
       console.log('You are not authorized to edit this user')
       console.log('---------------------------------------------')
       return res
@@ -362,40 +457,93 @@ async function editUserById(req, res) {
         .json({ message: 'You are not authorized to edit this user' })
     }
 
-    // const { username, phoneNumber, userAddress, password } = req.body;
-    const { username, phoneNumber, userAddress } = req.body
+    const updatedFields = {}
+    const currentDate = new Date()
 
-    // If username is provided, ensure it's unique
-    if (username && username !== user.username) {
-      const existingUser = await User.findOne({ username })
-
-      if (existingUser) {
-        return res.status(400).json({ message: 'Username already exists' })
-      }
-
-      user.username = username
+    if (req.body.userAddress) {
+      updatedFields.userAddress = req.body.userAddress
     }
 
-    // Update phoneNumber if provided
-    if (phoneNumber) {
-      user.phoneNumber = phoneNumber
+    if (req.body.phoneNumber) {
+      updatedFields.phoneNumber = req.body.phoneNumber
+    }
+  
+    // If there are fields to update, add/update the 'updatedOn' field
+    if (Object.keys(updatedFields).length > 0) {
+      updatedFields.updatedOn = currentDate
     }
 
-    // Update userAddress if provided
-    if (userAddress) {
-      user.userAddress = userAddress
+    const updatedUser = await User.findByIdAndUpdate(
+      existingUserData._id,
+      { $set: updatedFields },
+      { new: true }
+    )
+
+    res.json({ message: 'Updated field:', updatedFields })
+    console.log('Updated field:', updatedFields)
+    console.log('---------------------------------------------')
+    console.log('Updated user:', updatedUser)
+    console.log('---------------------------------------------')
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating user' })
+  }
+}
+
+// Delete user by ID
+async function deleteLoggedInUser(req, res) {
+  console.log('Request Body:', req.body)
+  console.log('Request User:', req.user)
+  console.log('---------------------------------------------')
+
+  try {
+    const userId = req.user.userId
+    console.log('User ID:', userId)
+    // console.log('---------------------------------------------')
+    const loggedInUser = await User.findById(userId)
+
+    // Check if the user is logged in
+    if (!loggedInUser) {
+      console.log('Unauthorized')
+      console.log('---------------------------------------------')
+      return res.status(401).json({ message: 'Unauthorized' })
     }
 
-    // // Update password if provided (encrypt using bcrypt)
-    // if (password) {
-    //   const hashedPassword = await bcrypt.hash(password, 10);
-    //   user.password = hashedPassword;
-    // }
+    const loggedInUserRole = loggedInUser.role
+    // console.log('Logged-in ID:', loggedInUserId)
+    console.log('Logged-in role:', loggedInUserRole)
+    console.log('---------------------------------------------')
 
-    await user.save()
+    const existingUserData = await User.findById(loggedInUser)
+    console.log('user post:', existingUserData)
+    console.log('---------------------------------------------')
+    
+    const existingUserId = existingUserData._id.toString()
+    console.log('user post ID:', existingUserId)
+    console.log('---------------------------------------------')
+  
+     // Check if the authenticated user is an admin
+     if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
+      console.log('You are not authorized to delete this user')
+      console.log('---------------------------------------------')
+      return res
+        .status(403)
+        .json({ message: 'You are not authorized to delete this user' })
+    }
 
-    res.json({ message: 'User updated', user })
-    console.log('User updated:', user)
+    // Find the user by userId
+    const user = await User.findById(existingUserId)
+
+    if (!user) {
+      console.log('User not found')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    // Find the user by userId and delete
+    const deletedUser = await User.findByIdAndDelete(existingUserId)
+
+    res.json({ message: 'User deleted:', deletedUser })
+    console.log('User deleted', deletedUser)
     console.log('---------------------------------------------')
   } catch (err) {
     console.log(err)
@@ -412,4 +560,6 @@ module.exports = {
   deleteUserById,
   editUserById,
   getLoggedInUserData,
+  editLoggedInUser,
+  deleteLoggedInUser,
 }
