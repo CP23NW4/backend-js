@@ -94,7 +94,8 @@ router.post(
 
     // Validate idCard
     body('idCard')
-      .optional()
+      .notEmpty()
+      .withMessage('User ID card number is required')
       .isNumeric()
       .withMessage('ID card should contain only numbers')
       .isLength({ min: 13, max: 13 })
@@ -113,6 +114,14 @@ router.post(
     //   // })
     //   ,
     body('homePicture').optional(),
+    body('userAddress')
+      .trim()
+      .notEmpty()
+      .withMessage('User address is required')
+      .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
+      .withMessage(
+        'User address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
+      ),
   ],
   registerUser
 )
@@ -132,7 +141,6 @@ router.delete('/:userId', authenticateUser, deleteUserById)
 // Edit user by ID
 router.put('/:userId', authenticateUser, editUserById)
 
-
 // Get logged-in user data
 router.get('/', authenticateUser, getLoggedInUserData)
 
@@ -141,6 +149,5 @@ router.put('/', authenticateUser, editLoggedInUser)
 
 // Delete logged-in user data
 router.delete('/', authenticateUser, deleteLoggedInUser)
-
 
 module.exports = router
