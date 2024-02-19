@@ -49,7 +49,6 @@ const getStrayAnimalById = async (req, res) => {
 const createStrayAnimal = async (req, res) => {
   console.log('Request Body:', req.body)
   console.log('Request File:', req.file)
-  // console.log('Logged-in user:', loggedInUser)
   console.log('---------------------------------------------')
 
   try {
@@ -59,9 +58,12 @@ const createStrayAnimal = async (req, res) => {
 
     // Fetch user data from the database using the userId
     const loggedInUser = await User.findById(userId)
-    console.log(loggedInUser.name)
-    console.log(loggedInUser.username)
-    console.log(loggedInUser.role)
+    console.log('Logged-in user:', {
+      ID: loggedInUser._id.toString(),
+      name: loggedInUser.name,
+      username: loggedInUser.username,
+      role: loggedInUser.role,
+    })
     console.log('---------------------------------------------')
 
     if (!loggedInUser) {
@@ -84,6 +86,12 @@ const createStrayAnimal = async (req, res) => {
     //   return res.status(403).json({ message: 'Insufficient permissions' })
     // }
 
+    if (!req.file) {
+      console.log('Picture is required.')
+      console.log('---------------------------------------------')
+      return res.status(400).json({ message: 'Picture is required.' })
+    }
+
     // Check if picture size exceeds the limit
     if (req.file && req.file.size > 11 * 1024 * 1024) {
       console.log('Image size should be less than 10MB.')
@@ -93,7 +101,7 @@ const createStrayAnimal = async (req, res) => {
         .json({ message: 'Image size should be less than 11MB.' })
     }
 
-    const { name, picture, type, gender, color, description } = req.body
+    const { name, type, gender, color, description } = req.body
 
     // Handle image upload to Azure Blob Storage
     // Determine the container based on the animal type

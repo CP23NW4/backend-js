@@ -26,15 +26,15 @@ router.post(
     body('gender').notEmpty().isIn(['Male', 'Female']).isLength({ max: 6 }),
     body('color')
       .notEmpty()
-      .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/)
-      .custom((value, { req }) => {
-        // Custom validation for 'picture' field
-        if (!req.file) {
-          throw new Error('Picture is required.')
-        }
-        return true
-      }),
+      .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/),
     body('description').isLength({ max: 500 }),
+    // Custom validation for 'picture' field
+    body('picture').custom((value, { req }) => {
+      if (!req.file) {
+        throw new Error('Picture is required.');
+      }
+      return true;
+    }),
   ],
   authenticateUser,
   strayAnimalController.createStrayAnimal
