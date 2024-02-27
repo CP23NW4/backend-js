@@ -13,6 +13,7 @@ const {
   editLoggedInUser,
   deleteLoggedInUser,
 } = require('../controllers/userController')
+const loggedInUserService = require('../services/loggedInUserService')
 const User = require('../models/User')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
@@ -142,7 +143,7 @@ router.delete('/:userId', authenticateUser, deleteUserById)
 router.put('/:userId', authenticateUser, editUserById)
 
 // Get logged-in user data
-router.get('/', authenticateUser, getLoggedInUserData)
+router.get('/', authenticateUser, loggedInUserService.getLoggedInUserData)
 
 // Edit logged-in user data
 router.put('/', authenticateUser, editLoggedInUser)
