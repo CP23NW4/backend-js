@@ -4,13 +4,11 @@ const { validationResult } = require('express-validator')
 const StrayAnimal = require('../models/StrayAnimal')
 const User = require('../models/User')
 const azureBlobService = require('../services/azureBlobService')
-const axios = require('axios')
+// const axios = require('axios')
 require('dotenv').config({ path: '../.env' })
 const jwt = require('jsonwebtoken')
 const fs = require('fs')
 const AdoptionRequest = require('../models/AdoptionRequest')
-
-const { uploadImageToBlob } = require('../services/azureBlobService') // Adjust the path as needed
 
 // Get all stray animals
 const getAllStrayAnimals = async (req, res) => {
@@ -79,13 +77,6 @@ const createStrayAnimal = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' })
     }
 
-    // // Check user role for permissions
-    // if (loggedInUser.role !== 'general') {  // only users with the "general" role can create
-    //   console.log('Insufficient permissions')
-    //   console.log('---------------------------------------------')
-    //   return res.status(403).json({ message: 'Insufficient permissions' })
-    // }
-
     if (!req.file) {
       console.log('Picture is required.')
       console.log('---------------------------------------------')
@@ -124,19 +115,8 @@ const createStrayAnimal = async (req, res) => {
       // If the picture is an external URL, use it directly
       imageUrl = req.body.picture
     } else {
-      // If the picture is part of form-data, upload it to Azure Blob Storage
-      const fileBuffer = req.file.buffer // Access the file buffer from form-data
-      const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg` // Change the filename as per your requirements
-
-      // Upload image to Azure Blob Storage
-      await azureBlobService.uploadImageToBlob(
-        fileBuffer,
-        fileName,
-        containerName
-      )
-
-      // Set the imageUrl as the Blob URL
-      imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${containerName}/${fileName}`
+        // Set the imageUrl as the Blob URL
+        imageUrl = await azureBlobService.uploadImageToBlob(req, containerName);
     }
 
     // Create a new stray animal with the Azure Blob Storage URL
@@ -174,15 +154,6 @@ function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
 }
 
-// Helper function to read a file asynchronously
-function readFileAsync(filePath) {
-  return new Promise((resolve, reject) => {
-    fs.readFile(filePath, (err, data) => {
-      if (err) reject(err)
-      else resolve(data)
-    })
-  })
-}
 
 // Update a stray animal by ID
 const updateStrayAnimal = async (req, res) => {

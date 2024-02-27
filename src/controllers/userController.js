@@ -45,26 +45,16 @@ async function registerUser(req, res) {
       homePicture,
     } = req.body
 
+    // Upload pic to Blob
     const containerName = 'users'
     let imageUrl
 
     if (userPicture && isExternalUrl(userPicture)) {
-      // If the picture is an external URL, use it directly
+       // If the picture is an external URL, use it directly
       imageUrl = userPicture
     } else if (req.file) {
-      // If the picture is part of form-data, upload it to Azure Blob Storage
-      const fileBuffer = req.file.buffer // Access the file buffer from form-data
-      const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg` // Change the filename as per your requirements
-
-      // Upload image to Azure Blob Storage
-      await azureBlobService.uploadImageToBlob(
-        fileBuffer,
-        fileName,
-        containerName
-      )
-
       // Set the imageUrl as the Blob URL
-      imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${containerName}/${fileName}`
+      imageUrl = await azureBlobService.uploadImageToBlob(req, containerName);
     }
 
     // Check for required fields
@@ -124,16 +114,6 @@ async function registerUser(req, res) {
 // Helper function to check if a URL is external
 function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
-}
-
-// Helper function to read a file asynchronously
-function readFileAsync(filePath) {
-  return new Promise((resolve, reject) => {
-    fs.readFile(filePath, (err, data) => {
-      if (err) reject(err)
-      else resolve(data)
-    })
-  })
 }
 
 // Login user
