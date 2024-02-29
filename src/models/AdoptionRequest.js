@@ -1,5 +1,5 @@
 // AdoptionRequest.js file defines the Mongoose model for the Stray Animal adoption request schema.
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 const adoptionRequestSchema = new mongoose.Schema({
   owner: {
@@ -12,7 +12,6 @@ const adoptionRequestSchema = new mongoose.Schema({
   },
   requester: {
     reqId: String,
-
     reqUsername: String,
     reqName: String,
     reqAddress: String,
@@ -24,11 +23,8 @@ const adoptionRequestSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+})
 
-const AdoptionRequest = mongoose.model(
-  "AdoptionRequest",
-  adoptionRequestSchema
-);
+const AdoptionRequest = mongoose.model('AdoptionRequest', adoptionRequestSchema)
 
-module.exports = AdoptionRequest;
+module.exports = AdoptionRequest

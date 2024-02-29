@@ -1,20 +1,30 @@
 // azureBlobService.js to encapsulate Azure Blob Storage functionality
 
-const { BlobServiceClient } = require('@azure/storage-blob')
 require('dotenv').config({ path: '../.env' })
+const { BlobServiceClient } = require('@azure/storage-blob')
 const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING
 
 // Remove the default containerName here
 const blobServiceClient =
   BlobServiceClient.fromConnectionString(connectionString)
 
-async function uploadImageToBlob(imageData, fileName, containerName) {
-  // Get the container client dynamically based on the provided containerName
-  const containerClient = blobServiceClient.getContainerClient(containerName)
+async function uploadImageToBlob(req, containerName, additionalInfo = {}) {
+  const { file, body } = req
+  const { picture, type } = body
 
+  // Check if picture is part of the request or provided separately
+  const imageData = file ? file.buffer : additionalInfo.imageData
+  const fileName =
+    additionalInfo.fileName ||
+    `${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`
+
+  const containerClient = blobServiceClient.getContainerClient(containerName)
   const blockBlobClient = containerClient.getBlockBlobClient(fileName)
   const uploadBlobResponse = await blockBlobClient.uploadData(imageData)
-  return uploadBlobResponse
+
+  const imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${containerName}/${fileName}`
+
+  return imageUrl
 }
 
 // Add more functions for retrieving/deleting images as needed

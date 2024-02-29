@@ -8,10 +8,7 @@ const userSchema = new mongoose.Schema({
     default: null,
   },
   name: String,
-  idCard: {
-    type: String,
-    default: null,
-  },
+  idCard: String,
   username: {
     type: String,
     unique: true,
@@ -22,17 +19,18 @@ const userSchema = new mongoose.Schema({
   },
   password: String,
   phoneNumber: String,
-  DOB: {
-    type: Date,
-    default: null,
-  },
+  DOB: Date,
   role: {
     type: String,
     default: 'general',
   },
   userAddress: {
-    type: String,
-    default: null,
+    postCode: Number,
+    tambonThaiShort: String,
+    districtThaiShort: String,
+    provinceThai: String,
+    addressLine1: String,  // for number of house, Urban
+    addressLine2: String, // for alley, road etc.
   },
   homePicture: {
     type: String,

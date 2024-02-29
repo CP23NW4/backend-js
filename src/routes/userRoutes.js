@@ -1,25 +1,15 @@
 // userRoutes.js file to define routes related to user authentication.
-const { body, oneOf } = require('express-validator')
 const express = require('express')
 const router = express.Router()
-const {
-  registerUser,
-  loginUser,
-  getAllUsers,
-  getUserById,
-  deleteUserById,
-  editUserById,
-  getLoggedInUserData,
-  editLoggedInUser,
-  deleteLoggedInUser,
-} = require('../controllers/userController')
-const User = require('../models/User')
-const { authenticateUser } = require('../middlewares/userAuthMiddleware')
-
+const { body, oneOf } = require('express-validator')
 const multer = require('multer') // multer is a middleware to handle form-data
 const upload = multer()
 
-// User registration
+const userController = require('../controllers/userController')
+const loggedInUserService = require('../services/loggedInUserService')
+const { authenticateUser } = require('../middlewares/userAuthMiddleware')
+
+// ----------------- User registration ------------------------------------------
 router.post(
   '/register',
   // upload.none(),
@@ -114,40 +104,40 @@ router.post(
     //   // })
     //   ,
     body('homePicture').optional(),
-    body('userAddress')
-      .trim()
-      .notEmpty()
-      .withMessage('User address is required')
-      .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
-      .withMessage(
-        'User address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
-      ),
+    body('userAddress').optional()
+      // .trim()
+      // .notEmpty()
+      // .withMessage('User address is required')
+      // .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
+      // .withMessage(
+      //   'User address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
+      // ),
   ],
-  registerUser
+  userController.registerUser
 )
 
-// User login
-router.post('/login', loginUser)
+// ----------------- User login -----------------------------------------------
+router.post('/login', userController.loginUser)
 
-// Get all users
-router.get('/all', authenticateUser, getAllUsers)
+//----------------- Get all users ---------------------------------------------
+router.get('/all', authenticateUser, userController.getAllUsers)
 
-// Get user by ID
-router.get('/:userId', authenticateUser, getUserById)
+// ----------------- Get user by ID -------------------------------------------
+router.get('/:userId', authenticateUser, userController.getUserById)
 
-// Delete user by ID
-router.delete('/:userId', authenticateUser, deleteUserById)
+// ----------------- Delete user by ID (Admin only) ----------------------------
+router.delete('/:userId', authenticateUser, userController.deleteUserById)
 
-// Edit user by ID
-router.put('/:userId', authenticateUser, editUserById)
+// ----------------- Edit user by ID (Admin only) ------------------------------
+router.put('/:userId', authenticateUser, userController.editUserById)
 
-// Get logged-in user data
-router.get('/', authenticateUser, getLoggedInUserData)
+// ----------------- Get logged-in user data ----------------------------------
+router.get('/', authenticateUser, loggedInUserService.getLoggedInUserData)
 
-// Edit logged-in user data
-router.put('/', authenticateUser, editLoggedInUser)
+// ----------------- Edit logged-in user data ---------------------------------
+router.put('/', authenticateUser, userController.editLoggedInUser)
 
-// Delete logged-in user data
-router.delete('/', authenticateUser, deleteLoggedInUser)
+// ----------------- Delete logged-in user data -------------------------------
+router.delete('/', authenticateUser, userController.deleteLoggedInUser)
 
 module.exports = router

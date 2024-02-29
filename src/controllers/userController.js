@@ -1,16 +1,18 @@
 // userController.js to Authentacation User Registration
-
-const jwt = require('jsonwebtoken')
-const User = require('../models/User')
-const bcrypt = require('bcryptjs')
-
 require('dotenv').config({ path: '../.env' })
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
+const { validationResult } = require('express-validator')
 const secretKey = process.env.SECRET_KEY // Accessing the secret key from the environment variable}
 
-const { validationResult } = require('express-validator')
-const azureBlobService = require('../services/azureBlobService') // Adjust the path as needed
+// Import models
+const User = require('../models/User')
 
-// Register a new user
+// Import service
+const azureBlobService = require('../services/azureBlobService') // Adjust the path as needed
+const loggedInUserService = require('../services/loggedInUserService')
+
+//----------------- Register a new user ----------------------------------------------------
 async function registerUser(req, res) {
   console.log('Request file:', req.file)
   try {
@@ -45,6 +47,7 @@ async function registerUser(req, res) {
       homePicture,
     } = req.body
 
+    // Upload pic to Blob
     const containerName = 'users'
     let imageUrl
 
@@ -52,19 +55,8 @@ async function registerUser(req, res) {
       // If the picture is an external URL, use it directly
       imageUrl = userPicture
     } else if (req.file) {
-      // If the picture is part of form-data, upload it to Azure Blob Storage
-      const fileBuffer = req.file.buffer // Access the file buffer from form-data
-      const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg` // Change the filename as per your requirements
-
-      // Upload image to Azure Blob Storage
-      await azureBlobService.uploadImageToBlob(
-        fileBuffer,
-        fileName,
-        containerName
-      )
-
       // Set the imageUrl as the Blob URL
-      imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${containerName}/${fileName}`
+      imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
     }
 
     // Check for required fields
@@ -86,6 +78,15 @@ async function registerUser(req, res) {
         .json({ message: 'Username or email already exists' })
     }
 
+    const {
+      postCode,
+      tambonThaiShort,
+      districtThaiShort,
+      provinceThai,
+      addressLine1,
+      addressLine2,
+    } = userAddress
+
     // Create a new user object with required fields
     const newUserFields = new User({
       name,
@@ -97,7 +98,14 @@ async function registerUser(req, res) {
       idCard: idCard,
       DOB: DOB,
       role: role,
-      userAddress: userAddress,
+      userAddress: {
+        postCode,
+        tambonThaiShort,
+        districtThaiShort,
+        provinceThai,
+        addressLine1,
+        addressLine2,
+      },
       homePicture: homePicture,
       createdOn: new Date(),
       updatedOn: new Date(),
@@ -106,7 +114,35 @@ async function registerUser(req, res) {
     if (imageUrl) {
       newUserFields.userPicture = imageUrl
     }
+    // Create a new user document
     const newUser = new User(newUserFields)
+
+    // If userAddress is provided, validate and add it to the new user document
+    if (userAddress) {
+      // Ensure that the required address fields are present
+      if (
+        !postCode ||
+        !tambonThaiShort ||
+        !districtThaiShort ||
+        !provinceThai
+      ) {
+        return res
+          .status(400)
+          .json({ message: 'Incomplete address information' })
+      }
+
+      // Add the validated address fields to the newUserFields object
+      newUserFields.userAddress = {
+        postCode,
+        tambonThaiShort,
+        districtThaiShort,
+        provinceThai,
+        addressLine1,
+        addressLine2,
+      }
+    }
+
+    // Save the new user document to the database
     await newUser.save()
 
     res
@@ -126,21 +162,8 @@ function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
 }
 
-// Helper function to read a file asynchronously
-function readFileAsync(filePath) {
-  return new Promise((resolve, reject) => {
-    fs.readFile(filePath, (err, data) => {
-      if (err) reject(err)
-      else resolve(data)
-    })
-  })
-}
-
-// Login user
+// ----------------- Login user -----------------------------------------------------
 async function loginUser(req, res) {
-  console.log('Request Body:', req.body)
-  console.log('---------------------------------------------')
-
   try {
     const { identifier, password } = req.body
 
@@ -190,38 +213,7 @@ async function loginUser(req, res) {
   }
 }
 
-// Get logged-in user data
-async function getLoggedInUserData(req, res) {
-  console.log('Logged-in user:', req.user)
-  console.log('---------------------------------------------')
-  try {
-    // Retrieve user data from the request object (added by middleware)
-    const userId = req.user.userId // Extract userId from the logged-in user data
-
-    // Fetch user data from the database using the userId
-    const loggedInUser = await User.findById(userId)
-
-    if (!loggedInUser) {
-      console.log('Logged-in user not found')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'Logged-in user not found' })
-    }
-
-    // Send the user data in the response
-    res.status(200).json(loggedInUser)
-    console.log(loggedInUser)
-    console.log(loggedInUser._id)
-    console.log(loggedInUser.name)
-    console.log(loggedInUser.username)
-    console.log(loggedInUser.role)
-    console.log('---------------------------------------------')
-  } catch (error) {
-    console.log(error)
-    res.status(500).json({ message: error.message })
-  }
-}
-
-// Get all users
+// ----------------- Get all users ------------------------------------------------------------
 async function getAllUsers(req, res) {
   try {
     const users = await User.find()
@@ -238,28 +230,20 @@ async function getAllUsers(req, res) {
 // Get user by ID
 async function getUserById(req, res) {
   try {
-    // Retrieve logged-in user's data
-    const loggedInUserId = req.user.userId
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    await loggedInUserService.getLoggedInUserDataNoRes(req)
 
-    // Fetch user data from the database
-    const loggedInUser = await User.findById(loggedInUserId)
-
-    if (!loggedInUser) {
-      console.log('Logged-in user not found')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'Logged-in user not found' })
-    }
-
+    // Fetch user data from the database using the provided userId
     const user = await User.findById(req.params.userId)
+
     if (!user) {
       console.log('User not found')
       console.log('---------------------------------------------')
       return res.status(404).json({ message: 'User not found' })
     }
+
+    // Send the user data in the response
     res.json({ user })
-    console.log('Logged-in userId:', loggedInUser._id)
-    console.log('Logged-in username:', loggedInUser.username)
-    console.log('---------------------------------------------')
     console.log('Requested user:', user)
     console.log('---------------------------------------------')
   } catch (err) {
@@ -269,40 +253,21 @@ async function getUserById(req, res) {
   }
 }
 
-// Delete user by ID
+// ----------------- Delete user by ID (Admin only) -----------------------------------------
 async function deleteUserById(req, res) {
-  console.log('Request Body:', req.body)
-  console.log('Request User:', req.user)
-  console.log('---------------------------------------------')
-
   try {
-    const userId = req.user.userId
-    console.log('User ID:', userId)
-    // console.log('---------------------------------------------')
-    const loggedInUser = await User.findById(userId)
-
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
     const loggedInUserRole = loggedInUser.role
-    // console.log('Logged-in ID:', loggedInUserId)
-    console.log('Logged-in role:', loggedInUserRole)
-    console.log('---------------------------------------------')
+    const loggedInuserId = loggedInUser._id.toString()
 
+    // Retrieve the user account by userId
     const existingUserData = await User.findById(req.params.userId)
-    console.log('user post:', existingUserData)
-    console.log('---------------------------------------------')
-
-    const existingUserId = existingUserData._id
-    console.log('user post ID:', existingUserId)
-    console.log('---------------------------------------------')
+    const existingUserId = existingUserData._id.toString()
 
     // Check if the authenticated user is an admin
-    if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
+    if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
       console.log('You are not authorized to delete this user')
       console.log('---------------------------------------------')
       return res
@@ -310,7 +275,7 @@ async function deleteUserById(req, res) {
         .json({ message: 'You are not authorized to delete this user' })
     }
 
-    // Find the user by userId
+    // Find the user account by userId
     const user = await User.findById(existingUserId)
 
     if (!user) {
@@ -323,7 +288,17 @@ async function deleteUserById(req, res) {
     const deletedUser = await User.findByIdAndDelete(existingUserId)
 
     res.json({ message: 'User deleted:', deletedUser })
-    console.log('User deleted', deletedUser)
+    console.log(
+      'User ID:',
+      deletedUser._id.toString(),
+      'username:',
+      deletedUser.username
+    )
+    console.log('is deleted by', {
+      ID: loggedInuserId,
+      username: loggedInUser.username,
+      role: loggedInUserRole,
+    })
     console.log('---------------------------------------------')
   } catch (err) {
     console.log(err)
@@ -332,40 +307,23 @@ async function deleteUserById(req, res) {
   }
 }
 
-// Edit user by ID - Placeholder for future use (using PUT)
+// ----------------- Edit user by ID (Admin only) ----------------------------------------------------
 async function editUserById(req, res) {
-  console.log('Request Body:', req.body)
-  console.log('Request User:', req.user)
-  console.log('---------------------------------------------')
-
   try {
-    const userId = req.user.userId
-    console.log('User ID:', userId)
-    // console.log('---------------------------------------------')
-    const loggedInUser = await User.findById(userId)
-
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
     const loggedInUserRole = loggedInUser.role
-    // console.log('Logged-in ID:', loggedInUserId)
-    console.log('Logged-in role:', loggedInUserRole)
-    console.log('---------------------------------------------')
+    const loggedInuserId = loggedInUser._id.toString()
 
     const existingUserData = await User.findById(req.params.userId)
     console.log('user post:', existingUserData)
     console.log('---------------------------------------------')
 
-    const existingUserId = existingUserData._id
-    console.log('user post ID:', existingUserId)
-    console.log('---------------------------------------------')
+    const existingUserId = existingUserData._id.toString()
 
     // Check if the authenticated user is an admin
-    if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
+    if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
       console.log('You are not authorized to edit this user')
       console.log('---------------------------------------------')
       return res
@@ -374,7 +332,7 @@ async function editUserById(req, res) {
     }
 
     // Find the user by userId
-    const user = await User.findById(userId)
+    const user = await User.findById(existingUserId)
 
     if (!user) {
       console.log('User not found')
@@ -408,49 +366,27 @@ async function editUserById(req, res) {
     // res.json(updatedStrayAnimal)
     console.log('Updated field:', updatedFields)
     console.log('---------------------------------------------')
-    console.log('Updated animal:', updatedUser)
-    console.log('---------------------------------------------')
   } catch (err) {
     res.status(500).json({ message: 'Error updating stray animal' })
   }
 }
 
-// Edit Logged in user - Placeholder for future use (using PUT)
+// ----------------- Edit Logged in user -------------------------------------------------------
 async function editLoggedInUser(req, res) {
-  console.log('Request Body:', req.body)
-  console.log('Request User:', req.user)
-  console.log('---------------------------------------------')
-
   try {
-    const userId = req.user.userId
-    console.log('User ID:', userId)
-    // console.log('---------------------------------------------')
-    const loggedInUser = await User.findById(userId)
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
-
-    // const loggedInUserId = loggedInUser._id
-    // // const loggedInUserUsername = loggedInUser.username
     const loggedInUserRole = loggedInUser.role
-    // console.log('Logged-in ID:', loggedInUserId)
-    console.log('Logged-in role:', loggedInUserRole)
-    console.log('---------------------------------------------')
+    const loggedInuserId = loggedInUser._id.toString()
 
     const existingUserData = await User.findById(loggedInUser)
+    const existingUserId = existingUserData._id.toString()
     console.log('user post:', existingUserData)
     console.log('---------------------------------------------')
 
-    const existingUserId = existingUserData._id.toString()
-    console.log('user post ID:', existingUserId)
-    console.log('---------------------------------------------')
-
     // Check if the authenticated user is an admin
-    if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
+    if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
       console.log('You are not authorized to edit this user')
       console.log('---------------------------------------------')
       return res
@@ -483,45 +419,28 @@ async function editLoggedInUser(req, res) {
     res.json({ message: 'Updated field:', updatedFields })
     console.log('Updated field:', updatedFields)
     console.log('---------------------------------------------')
-    console.log('Updated user:', updatedUser)
-    console.log('---------------------------------------------')
   } catch (err) {
     res.status(500).json({ message: 'Error updating user' })
   }
 }
 
-// Delete user by ID
+// ----------------- Delete Logged in user -------------------------------------------
 async function deleteLoggedInUser(req, res) {
-  console.log('Request User:', req.user)
-  console.log('---------------------------------------------')
-
   try {
-    const loggedInUser = await User.findById(req.user.userId)
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
-
-    const loggedInUserId = loggedInUser._id.toString()
-    const loggedInUserUname = loggedInUser.username
     const loggedInUserRole = loggedInUser.role
-    console.log('Logged-in ID:', loggedInUserId)
-    console.log('Logged-in username:', loggedInUserUname)
-    console.log('Logged-in role:', loggedInUserRole)
-    console.log('---------------------------------------------')
+    const loggedInUserId = loggedInUser._id.toString()
 
     // Check if the user is logged in and request is matches or not
     const existingUserData = await User.findById(loggedInUser)
-    // console.log('user post:', existingUserData)
-    // console.log('---------------------------------------------')
-
     const existingUserId = existingUserData._id.toString()
-    console.log('user account ID:', existingUserId)
-    console.log('username:', existingUserData.username)
-    console.log('email:', existingUserData.email)
+
+    console.log('User account:', {
+      ID: existingUserId,
+      username: existingUserData.username,
+    })
     console.log('---------------------------------------------')
 
     // Check if the authenticated user is an admin
@@ -537,11 +456,14 @@ async function deleteLoggedInUser(req, res) {
     const deletedUser = await User.findByIdAndDelete(existingUserId)
 
     res.json({ message: 'User deleted:', deletedUser })
-    console.log('User deleted:', {
-      ID: deletedUser._id.toString(),
-      username: deletedUser.username,
-    })
-    // console.log('User deleted:', deletedUser.username)
+    console.log(
+      'User:',
+      {
+        ID: deletedUser._id.toString(),
+        username: deletedUser.username,
+      },
+      'is deleted'
+    )
     console.log('---------------------------------------------')
   } catch (err) {
     console.log(err)
@@ -557,7 +479,7 @@ module.exports = {
   getUserById,
   deleteUserById,
   editUserById,
-  getLoggedInUserData,
+  // getLoggedInUserData,
   editLoggedInUser,
   deleteLoggedInUser,
 }
