@@ -6,8 +6,6 @@ const cors = require('cors')
 const strayAnimalRoutes = require('./routes/strayAnimalRoutes')
 const userRoutes = require('./routes/userRoutes')
 const app = express()
-const multer = require('multer')
-// const { uploadImage } = require('./controllers/strayAnimalController'); // Import the image upload controller function
 require('dotenv').config({ path: '../.env' })
 
 app.use(cors())
@@ -40,7 +38,7 @@ app.listen(PORT, () => {
   console.log(`Server running on port http://localhost:${PORT}`)
 })
 
-app.get('/', async (req, res) => {
+app.get('/api', async (req, res) => {
   res.send('Hello')
 })
 

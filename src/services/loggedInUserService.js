@@ -43,10 +43,8 @@ async function getLoggedInUserDataNoRes(req, res) {
       console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Logged-in user not found' })
     }
-    //   console.log('Logged-in user:', loggedInUser)
     console.log('Logged-in user:', {
       ID: loggedInUser._id.toString(),
-      //   name: loggedInUser.name,
       username: loggedInUser.username,
       role: loggedInUser.role,
     })

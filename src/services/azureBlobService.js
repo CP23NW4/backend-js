@@ -1,7 +1,7 @@
 // azureBlobService.js to encapsulate Azure Blob Storage functionality
 
-const { BlobServiceClient } = require('@azure/storage-blob')
 require('dotenv').config({ path: '../.env' })
+const { BlobServiceClient } = require('@azure/storage-blob')
 const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING
 
 // Remove the default containerName here

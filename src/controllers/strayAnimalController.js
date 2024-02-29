@@ -1,16 +1,15 @@
 // strayAnimalController.js for handling operations related to stray animals.
-
-const { validationResult } = require('express-validator')
-const StrayAnimal = require('../models/StrayAnimal')
-const User = require('../models/User')
-const azureBlobService = require('../services/azureBlobService')
-// const axios = require('axios')
 require('dotenv').config({ path: '../.env' })
-const jwt = require('jsonwebtoken')
-const fs = require('fs')
+
+// Import models
+const StrayAnimal = require('../models/StrayAnimal')
 const AdoptionRequest = require('../models/AdoptionRequest')
 
-// Get all stray animals
+// Import services
+const azureBlobService = require('../services/azureBlobService')
+const loggedInUserService = require('../services/loggedInUserService')
+
+//----------------- Get all stray animals --------------------------------------------------
 const getAllStrayAnimals = async (req, res) => {
   try {
     const allStrayAnimals = await StrayAnimal.find().sort({ createdOn: -1 })
@@ -24,7 +23,7 @@ const getAllStrayAnimals = async (req, res) => {
   }
 }
 
-// Get animal by ID
+//----------------- Get animal by ID ---------------------------------------------------------
 const getStrayAnimalById = async (req, res) => {
   try {
     const strayAnimalbyId = await StrayAnimal.findById(req.params.saId)
@@ -43,39 +42,14 @@ const getStrayAnimalById = async (req, res) => {
   }
 }
 
-// Create a new stray animal
+//----------------- Create a new stray animal --------------------------------------------
 const createStrayAnimal = async (req, res) => {
-  console.log('Request Body:', req.body)
   console.log('Request File:', req.file)
   console.log('---------------------------------------------')
 
   try {
-    // Get logged-in user data
-    // Retrieve user data from the request object (added by middleware)
-    const userId = req.user.userId // Extract userId from the logged-in user data
-
-    // Fetch user data from the database using the userId
-    const loggedInUser = await User.findById(userId)
-    console.log('Logged-in user:', {
-      ID: loggedInUser._id.toString(),
-      name: loggedInUser.name,
-      username: loggedInUser.username,
-      role: loggedInUser.role,
-    })
-    console.log('---------------------------------------------')
-
-    if (!loggedInUser) {
-      console.log('Logged-in user not found')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'Logged-in user not found' })
-    }
-
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
+    //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
     if (!req.file) {
       console.log('Picture is required.')
@@ -115,8 +89,8 @@ const createStrayAnimal = async (req, res) => {
       // If the picture is an external URL, use it directly
       imageUrl = req.body.picture
     } else {
-        // Set the imageUrl as the Blob URL
-        imageUrl = await azureBlobService.uploadImageToBlob(req, containerName);
+      // Set the imageUrl as the Blob URL
+      imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
     }
 
     // Create a new stray animal with the Azure Blob Storage URL
@@ -140,7 +114,11 @@ const createStrayAnimal = async (req, res) => {
     const savedStrayAnimal = await newStrayAnimal.save()
 
     res.status(201).json(savedStrayAnimal)
-    console.log('Animal post has been created!', savedStrayAnimal)
+    console.log(
+      'Animal post has been created by:',
+      loggedInUser.username,
+      savedStrayAnimal
+    )
     console.log('---------------------------------------------')
   } catch (error) {
     console.error(error)
@@ -154,45 +132,14 @@ function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
 }
 
-
-// Update a stray animal by ID
+//----------------- Update a stray animal by ID --------------------------------------------
 const updateStrayAnimal = async (req, res) => {
-  const errors = validationResult(req)
-
-  if (!errors.isEmpty()) {
-    const specificErrors = {}
-
-    errors.array().forEach((error) => {
-      if (!specificErrors[error.param]) {
-        specificErrors[error.param] = error.msg
-      }
-    })
-
-    console.log(specificErrors)
-    console.log('---------------------------------------------')
-    return res.status(400).json(specificErrors)
-  }
-
   try {
-    // Retrieve logged-in user's data
-    const userId = req.user.userId
-    console.log('User ID:', userId)
-    // console.log('---------------------------------------------')
-    const loggedInUser = await User.findById(userId)
+    //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
-
-    const loggedInUserId = loggedInUser._id
-    // const loggedInUserUsername = loggedInUser.username
     const loggedInUserRole = loggedInUser.role
-    console.log('Logged-in ID:', loggedInUserId)
-    console.log('Logged-in role:', loggedInUserRole)
-    console.log('---------------------------------------------')
+    const loggedInUserId = loggedInUser._id.toString()
 
     const existingStrayAnimal = await StrayAnimal.findById(req.params.saId)
 
@@ -204,11 +151,13 @@ const updateStrayAnimal = async (req, res) => {
 
     const existingStrayAnimalOwnerId = existingStrayAnimal.owner.ownerId
     console.log('Animal owner:', existingStrayAnimalOwnerId)
-    // console.log('Animal data:', existingStrayAnimal)
     console.log('---------------------------------------------')
 
     // Check if the authenticated user is an admin
-    if (loggedInUserRole !== 'admin' && existingStrayAnimalOwnerId !== userId) {
+    if (
+      loggedInUserRole !== 'admin' &&
+      existingStrayAnimalOwnerId !== loggedInUserId
+    ) {
       console.log('You are not authorized to edit this animal')
       console.log('---------------------------------------------')
       return res
@@ -225,9 +174,6 @@ const updateStrayAnimal = async (req, res) => {
     if (req.body.picture) {
       updatedFields.picture = req.body.picture
     }
-    // if (req.body.type) {
-    //   updatedFields.type = req.body.type
-    // }
     if (req.body.gender) {
       updatedFields.gender = req.body.gender
     }
@@ -250,7 +196,6 @@ const updateStrayAnimal = async (req, res) => {
     )
 
     res.json({ message: 'Updated field:', updatedFields })
-    // res.json(updatedStrayAnimal)
     console.log('Updated field:', updatedFields)
     console.log('---------------------------------------------')
     console.log('Updated animal:', updatedStrayAnimal)
@@ -260,29 +205,14 @@ const updateStrayAnimal = async (req, res) => {
   }
 }
 
-// Delete a stray animal by ID
+//----------------- Delete a stray animal by ID -----------------------------------------------
 const deleteStrayAnimal = async (req, res) => {
-  console.log('Logged-in user:', req.user)
-
   try {
-    // Retrieve logged-in user's data
-    const userId = req.user.userId
-    console.log('User ID:', userId)
-    // console.log('---------------------------------------------')
-    const loggedInUser = await User.findById(userId)
+    //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
-
-    const loggedInUserId = loggedInUser._id
     const loggedInUserRole = loggedInUser.role
-    console.log('Logged-in ID:', loggedInUserId)
-    console.log('Logged-in role:', loggedInUserRole)
-    console.log('---------------------------------------------')
+    const loggedInUserId = loggedInUser._id.toString()
 
     const existingStrayAnimal = await StrayAnimal.findById(req.params.saId)
 
@@ -293,79 +223,40 @@ const deleteStrayAnimal = async (req, res) => {
     }
 
     const existingStrayAnimalOwnerId = existingStrayAnimal.owner.ownerId
-    console.log('Animal owner:', existingStrayAnimalOwnerId)
-    // console.log('Animal data:', existingStrayAnimal)
-    console.log('---------------------------------------------')
+    console.log('Logged-in user ID:', loggedInUserId)
 
     // Check if the authenticated user is an admin
-    if (loggedInUserRole !== 'admin' && existingStrayAnimalOwnerId !== userId) {
-      console.log('You are not authorized to edit this animal')
+    if (
+      loggedInUserRole !== 'admin' &&
+      existingStrayAnimalOwnerId !== loggedInUserId
+    ) {
+      console.log('You are not authorized to delete this animal')
       console.log('---------------------------------------------')
       return res
         .status(403)
-        .json({ message: 'You are not authorized to edit this animal' })
+        .json({ message: 'You are not authorized to delete this animal' })
     }
 
     const saId = req.params.saId
-    console.log('Animal:', req.params)
+    console.log('Animal ID:', saId)
+    console.log('Owner ID:', existingStrayAnimalOwnerId)
+    console.log('---------------------------------------------')
 
     const deletedStrayAnimal = await StrayAnimal.findByIdAndDelete(saId)
 
     res.json({ message: 'Stray animal deleted:', deletedStrayAnimal })
-    console.log('Animal deleted', deletedStrayAnimal)
+    console.log('Animal deleted by:', loggedInUser.username, deletedStrayAnimal)
     console.log('---------------------------------------------')
   } catch (err) {
     res.status(500).json({ message: 'Error deleting stray animal' })
   }
 }
 
-// ------------------Request Adoption----------------------------------
-// const { getImageFromBlob } = require('../services/azureBlobService');
-
-// async function getImage(req, res) {
-//   try {
-//     const fileName = req.params.fileName; // Assuming you pass the file name as a parameter
-//     const containerName = req.params.containerName; // Assuming you pass the container name as a parameter
-
-//     const imageData = await getImageFromBlob(fileName, containerName);
-
-//     // Set response content type as image/jpeg (or appropriate content type based on your image)
-//     res.writeHead(200, {
-//       'Content-Type': 'image/jpeg',
-//       'Content-Length': imageData.length,
-//     });
-//     res.end(imageData);
-//   } catch (error) {
-//     console.error('Error retrieving image', error);
-//     res.status(500).json({ error: 'Failed to retrieve image' });
-//   }
-// }
-
-// Post adoption request for a stray animal by ID
+// ----------------- Post adoption request for a stray animal by ID -------------------------------------------
 const requestAdoption = async (req, res) => {
-  console.log('Animal:', req.params)
-  console.log('Logged-in user:', req.user)
-  // console.log(req.body)
-  console.log('---------------------------------------------')
-
   try {
-    // Check if the user is logged in
-    if (!req.user) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
-
-    // Retrieve logged-in user's data
-    const loggedInUserId = req.user.userId
-    // Fetch user data from the database
-    const loggedInUser = await User.findById(loggedInUserId)
-
-    if (!loggedInUser) {
-      console.log('Logged-in user not found')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'Logged-in user not found' })
-    }
+    //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
     // Retrieve stray animal data
     const dataInStrayAnimal = req.params.saId
@@ -409,7 +300,11 @@ const requestAdoption = async (req, res) => {
       message: 'Adoption request submitted successfully:',
       adoptionRequest,
     })
-    console.log('Adoption request submitted successfully:', adoptionRequest)
+    console.log(
+      'Adoption request submitted successfully by:',
+      loggedInUser.username,
+      adoptionRequest
+    )
     console.log('---------------------------------------------')
   } catch (error) {
     console.error('Unable to submit adoption request', error)
@@ -424,6 +319,4 @@ module.exports = {
   updateStrayAnimal,
   deleteStrayAnimal,
   requestAdoption,
-  // uploadImage,
-  // getImage,
 }

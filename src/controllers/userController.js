@@ -1,17 +1,18 @@
 // userController.js to Authentacation User Registration
-
-const jwt = require('jsonwebtoken')
-const User = require('../models/User')
-const bcrypt = require('bcryptjs')
-
 require('dotenv').config({ path: '../.env' })
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
+const { validationResult } = require('express-validator')
 const secretKey = process.env.SECRET_KEY // Accessing the secret key from the environment variable}
 
-const { validationResult } = require('express-validator')
-const azureBlobService = require('../services/azureBlobService') // Adjust the path as needed
+// Import models
+const User = require('../models/User')
 
+// Import service
+const azureBlobService = require('../services/azureBlobService') // Adjust the path as needed
 const loggedInUserService = require('../services/loggedInUserService')
-// Register a new user
+
+//----------------- Register a new user ----------------------------------------------------
 async function registerUser(req, res) {
   console.log('Request file:', req.file)
   try {
@@ -117,10 +118,8 @@ function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
 }
 
-// Login user
+// ----------------- Login user -----------------------------------------------------
 async function loginUser(req, res) {
-  // console.log('Request Body:', req.body)
-  // console.log('---------------------------------------------')
   try {
     const { identifier, password } = req.body
 
@@ -170,7 +169,7 @@ async function loginUser(req, res) {
   }
 }
 
-// Get all users
+// ----------------- Get all users ------------------------------------------------------------
 async function getAllUsers(req, res) {
   try {
     const users = await User.find()
@@ -210,7 +209,7 @@ async function getUserById(req, res) {
   }
 }
 
-// Delete user by ID (Admin only)
+// ----------------- Delete user by ID (Admin only) -----------------------------------------
 async function deleteUserById(req, res) {
   try {
     // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
@@ -264,7 +263,7 @@ async function deleteUserById(req, res) {
   }
 }
 
-// Edit user by ID (Admin only)
+// ----------------- Edit user by ID (Admin only) ----------------------------------------------------
 async function editUserById(req, res) {
   try {
     // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
@@ -328,7 +327,7 @@ async function editUserById(req, res) {
   }
 }
 
-// Edit Logged in user - Placeholder for future use (using PUT)
+// ----------------- Edit Logged in user -------------------------------------------------------
 async function editLoggedInUser(req, res) {
   try {
     // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
@@ -336,12 +335,11 @@ async function editLoggedInUser(req, res) {
 
     const loggedInUserRole = loggedInUser.role
     const loggedInuserId = loggedInUser._id.toString()
-    
+
     const existingUserData = await User.findById(loggedInUser)
     const existingUserId = existingUserData._id.toString()
     console.log('user post:', existingUserData)
     console.log('---------------------------------------------')
-
 
     // Check if the authenticated user is an admin
     if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
@@ -382,7 +380,7 @@ async function editLoggedInUser(req, res) {
   }
 }
 
-// Delete user by ID
+// ----------------- Delete Logged in user -------------------------------------------
 async function deleteLoggedInUser(req, res) {
   try {
     // Call getLoggedInUserDataNoRes to retrieve logged-in user's data

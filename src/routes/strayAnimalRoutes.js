@@ -1,19 +1,20 @@
 // strayAnimalRoutes.js for defining the routes related to stray animals.
-
 const express = require('express')
 const { body, validationResult } = require('express-validator')
-const StrayAnimal = require('../models/StrayAnimal')
-const strayAnimalController = require('../controllers/strayAnimalController')
-const { authenticateUser } = require('../middlewares/userAuthMiddleware')
-
 const router = express.Router()
-
 const multer = require('multer') // multer is a middleware to handle form-data
 const upload = multer()
 
+const strayAnimalController = require('../controllers/strayAnimalController')
+const { authenticateUser } = require('../middlewares/userAuthMiddleware')
+
+// ----------------- Get all animals ----------------------------------------------
 router.get('/', strayAnimalController.getAllStrayAnimals)
+
+// ----------------- Get animal by ID ---------------------------------------------
 router.get('/:saId', strayAnimalController.getStrayAnimalById)
 
+// ----------------- Create animal ------------------------------------------------
 router.post(
   '/',
   upload.single('picture'),
@@ -31,15 +32,16 @@ router.post(
     // Custom validation for 'picture' field
     body('picture').custom((value, { req }) => {
       if (!req.file) {
-        throw new Error('Picture is required.');
+        throw new Error('Picture is required.')
       }
-      return true;
+      return true
     }),
   ],
   authenticateUser,
   strayAnimalController.createStrayAnimal
 )
 
+// ----------------- Edit animal by ID -----------------------------------------------
 router.put(
   '/:saId',
   [
@@ -60,13 +62,14 @@ router.put(
   strayAnimalController.updateStrayAnimal
 )
 
+// ----------------- Delete animal by ID -------------------------------------------
 router.delete(
   '/:saId',
   authenticateUser,
   strayAnimalController.deleteStrayAnimal
 )
 
-// Route for posting adoption requests by ID
+// ----------------- Route for posting adoption requests by ID ---------------------
 router.post(
   '/:saId/reqAdoption',
   upload.none(),
@@ -77,15 +80,5 @@ router.post(
   authenticateUser,
   strayAnimalController.requestAdoption
 )
-
-// --------------------------------------------------------------
-
-// const multer = require('multer'); // Assuming you use multer for file uploads
-
-// const upload = multer(); // Set up multer middleware for handling multipart/form-data
-
-// router.post('/upload-image', upload.single('picture'), strayAnimalController.uploadImage);
-// Route to get an image by file name
-// router.get('/get-image/:containerName:fileName', strayAnimalController.getImage);
 
 module.exports = router
