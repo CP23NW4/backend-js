@@ -3,6 +3,7 @@ require('dotenv').config({ path: '../.env' })
 
 // Import models
 const StrayAnimal = require('../models/StrayAnimal')
+const User = require('../models/User')
 const AdoptionRequest = require('../models/AdoptionRequest')
 
 // Import services
@@ -254,9 +255,20 @@ const deleteStrayAnimal = async (req, res) => {
 
 // ----------------- Post adoption request for a stray animal by ID -------------------------------------------
 const requestAdoption = async (req, res) => {
+  console.log('Request file:', req.file)
+  console.log('---------------------------------------------')
   try {
     //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+    // Check if picture size exceeds the limit
+    if (req.file && req.file.size > 11 * 1024 * 1024) {
+      console.log('Image size should be less than 10MB.')
+      console.log('---------------------------------------------')
+      return res
+        .status(400)
+        .json({ message: 'Image size should be less than 10MB.' })
+    }
 
     // Retrieve stray animal data
     const dataInStrayAnimal = req.params.saId
@@ -269,7 +281,19 @@ const requestAdoption = async (req, res) => {
       return res.status(404).json({ message: 'Data stray animal not found' })
     }
 
-    const { reqAddress, reqPhone, reqIdCard, note } = req.body
+    const { reqAddress, reqPhone, reqIdCard, note, homePicture } = req.body
+
+    // Upload pic to Blob
+    const containerName = 'usershome'
+    let imageUrl
+
+    if (homePicture && isExternalUrl(homePicture)) {
+      // If the picture is an external URL, use it directly
+      imageUrl = req.body.homePicture
+    } else if (req.file) {
+      // Set the imageUrl as the Blob URL
+      imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
+    }
 
     // Create a new adoption request
     const adoptionRequest = new AdoptionRequest({
@@ -290,11 +314,20 @@ const requestAdoption = async (req, res) => {
         reqIdCard: loggedInUser.idCard,
       },
       note,
+      homePicture,
       createdOn: new Date(),
     })
 
+    // Conditionally include homePicture if imageUrl is defined
+    if (imageUrl) {
+      adoptionRequest.homePicture = imageUrl
+    }
+
+    // Create a new AdoptionRequest document
+    const newAdoptionRequest = new AdoptionRequest(adoptionRequest)
+
     // Save the adoption request to the database
-    await adoptionRequest.save()
+    await newAdoptionRequest.save()
 
     res.status(201).json({
       message: 'Adoption request submitted successfully:',
@@ -310,6 +343,11 @@ const requestAdoption = async (req, res) => {
     console.error('Unable to submit adoption request', error)
     res.status(500).json({ message: 'Unable to submit adoption request' })
   }
+}
+
+// Helper function to check if a URL is external
+function isExternalUrl(url) {
+  return /^(https?:\/\/|www\.)\S+$/.test(url)
 }
 
 module.exports = {

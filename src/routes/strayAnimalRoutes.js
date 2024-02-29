@@ -72,7 +72,8 @@ router.delete(
 // ----------------- Route for posting adoption requests by ID ---------------------
 router.post(
   '/:saId/reqAdoption',
-  upload.none(),
+  // upload.none(),
+  upload.single('homePicture'),
   body('note')
     .optional()
     .isLength({ min: 1, max: 500 })
