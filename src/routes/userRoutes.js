@@ -92,26 +92,17 @@ router.post(
       .withMessage('ID card must be 13 digits'),
 
     // Validate userPicture
-    // body('userPicture')
-    //   .optional()
-    //   // .custom((value, { req }) => {
-    //   //   if (req.file && req.file.size > 10 * 1024 * 1024) {
-    //   //     throw new Error(
-    //   //       'User picture size should be less than or equal to 10MB'
-    //   //     )
-    //   //   }
-    //   //   return true
-    //   // })
-    //   ,
+    // body('userPicture').optional(),
+ 
     body('homePicture').optional(),
-    body('userAddress').optional()
-      // .trim()
-      // .notEmpty()
-      // .withMessage('User address is required')
-      // .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
-      // .withMessage(
-      //   'User address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
-      // ),
+    body('userAddress').optional(),
+    // .trim()
+    // .notEmpty()
+    // .withMessage('User address is required')
+    // .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
+    // .withMessage(
+    //   'User address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
+    // ),
   ],
   userController.registerUser
 )
