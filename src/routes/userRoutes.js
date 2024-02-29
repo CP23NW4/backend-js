@@ -104,14 +104,14 @@ router.post(
     //   // })
     //   ,
     body('homePicture').optional(),
-    body('userAddress')
-      .trim()
-      .notEmpty()
-      .withMessage('User address is required')
-      .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
-      .withMessage(
-        'User address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
-      ),
+    body('userAddress').optional()
+      // .trim()
+      // .notEmpty()
+      // .withMessage('User address is required')
+      // .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
+      // .withMessage(
+      //   'User address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
+      // ),
   ],
   userController.registerUser
 )

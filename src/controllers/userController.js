@@ -78,6 +78,15 @@ async function registerUser(req, res) {
         .json({ message: 'Username or email already exists' })
     }
 
+    const {
+      postCode,
+      tambonThaiShort,
+      districtThaiShort,
+      provinceThai,
+      addressLine1,
+      addressLine2,
+    } = userAddress
+
     // Create a new user object with required fields
     const newUserFields = new User({
       name,
@@ -89,7 +98,14 @@ async function registerUser(req, res) {
       idCard: idCard,
       DOB: DOB,
       role: role,
-      userAddress: userAddress,
+      userAddress: {
+        postCode,
+        tambonThaiShort,
+        districtThaiShort,
+        provinceThai,
+        addressLine1,
+        addressLine2,
+      },
       homePicture: homePicture,
       createdOn: new Date(),
       updatedOn: new Date(),
@@ -98,7 +114,35 @@ async function registerUser(req, res) {
     if (imageUrl) {
       newUserFields.userPicture = imageUrl
     }
+    // Create a new user document
     const newUser = new User(newUserFields)
+
+    // If userAddress is provided, validate and add it to the new user document
+    if (userAddress) {
+      // Ensure that the required address fields are present
+      if (
+        !postCode ||
+        !tambonThaiShort ||
+        !districtThaiShort ||
+        !provinceThai
+      ) {
+        return res
+          .status(400)
+          .json({ message: 'Incomplete address information' })
+      }
+
+      // Add the validated address fields to the newUserFields object
+      newUserFields.userAddress = {
+        postCode,
+        tambonThaiShort,
+        districtThaiShort,
+        provinceThai,
+        addressLine1,
+        addressLine2,
+      }
+    }
+
+    // Save the new user document to the database
     await newUser.save()
 
     res
