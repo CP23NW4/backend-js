@@ -17,6 +17,12 @@ const strayAnimalSchema = new mongoose.Schema({
     ownerUsername: String,
     phoneNumber: String,
     role: String,
+    ownerAddress: {
+      PostCode: Number,
+      TambonThaiShort: String,
+      DistrictThaiShort: String,
+      ProvinceThai: String,
+    },
   },
   createdOn: Date,
   updatedOn: Date,

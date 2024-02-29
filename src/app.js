@@ -5,6 +5,7 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const strayAnimalRoutes = require('./routes/strayAnimalRoutes')
 const userRoutes = require('./routes/userRoutes')
+const thailandRoutes = require('./routes/thailandRoutes')
 const app = express()
 require('dotenv').config({ path: '../.env' })
 
@@ -23,6 +24,7 @@ mongoose.connect(
 // Routes
 app.use('/api/strayAnimals', strayAnimalRoutes)
 app.use('/api/users', userRoutes) // Use user routes at '/users'
+app.use('/api/thailand', thailandRoutes) // Use user routes at '/users'
 
 // Error handling middleware for authentication issues
 app.use((err, req, res, next) => {

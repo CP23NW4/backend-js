@@ -8,10 +8,7 @@ const userSchema = new mongoose.Schema({
     default: null,
   },
   name: String,
-  idCard: {
-    type: String,
-    default: null,
-  },
+  idCard: String,
   username: {
     type: String,
     unique: true,
@@ -22,17 +19,16 @@ const userSchema = new mongoose.Schema({
   },
   password: String,
   phoneNumber: String,
-  DOB: {
-    type: Date,
-    default: null,
-  },
+  DOB: Date,
   role: {
     type: String,
     default: 'general',
   },
   userAddress: {
-    type: String,
-    default: null,
+    PostCode: Number,
+    TambonThaiShort: String,
+    DistrictThaiShort: String,
+    ProvinceThai: String,
   },
   homePicture: {
     type: String,
