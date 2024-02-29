@@ -3,7 +3,7 @@ require('dotenv').config({ path: '../.env' })
 
 const Thailand = require('../models/Thailand')
 
-// Controller to get all data
+// ----------------- Controller to get all data -----------------------------
 const getAllThailandData = async (req, res) => {
   try {
     // Fetch all data from the Thailand collection
@@ -14,7 +14,7 @@ const getAllThailandData = async (req, res) => {
   }
 }
 
-// Controller to get data by ID
+// ----------------- Controller to get data by ID ---------------------------
 const getThailandDataById = async (req, res) => {
   const thId = req.params.thId
   try {
