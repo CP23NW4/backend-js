@@ -3,11 +3,14 @@ require('dotenv').config({ path: '../.env' })
 
 // Import models
 const StrayAnimal = require('../models/StrayAnimal')
+const User = require('../models/User')
 const AdoptionRequest = require('../models/AdoptionRequest')
 
 // Import services
 const azureBlobService = require('../services/azureBlobService')
 const loggedInUserService = require('../services/loggedInUserService')
+
+const { validationResult } = require ('express-validator')
 
 //----------------- Get all stray animals --------------------------------------------------
 const getAllStrayAnimals = async (req, res) => {
@@ -58,12 +61,12 @@ const createStrayAnimal = async (req, res) => {
     }
 
     // Check if picture size exceeds the limit
-    if (req.file && req.file.size > 11 * 1024 * 1024) {
-      console.log('Image size should be less than 10MB.')
+    if (req.file && req.file.size > 3 * 1024 * 1024) {
+      console.log('Image size should be less than 3MB.')
       console.log('---------------------------------------------')
       return res
         .status(400)
-        .json({ message: 'Image size should be less than 11MB.' })
+        .json({ message: 'Image size should be less than 3MB.' })
     }
 
     const { name, type, gender, color, description } = req.body
@@ -254,9 +257,29 @@ const deleteStrayAnimal = async (req, res) => {
 
 // ----------------- Post adoption request for a stray animal by ID -------------------------------------------
 const requestAdoption = async (req, res) => {
+  console.log('Request file:', req.file)
+  console.log('---------------------------------------------')
   try {
     //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+    // Validation function
+    const errors = validationResult(req).formatWith(({ value, msg }) => ({
+      value,
+      msg,
+    }))
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    // Check if picture size exceeds the limit
+    if (req.file && req.file.size > 3 * 1024 * 1024) {
+      console.log('Image size should be less than 3MB.')
+      console.log('---------------------------------------------')
+      return res
+        .status(400)
+        .json({ message: 'Image size should be less than 3MB.' })
+    }
 
     // Retrieve stray animal data
     const dataInStrayAnimal = req.params.saId
@@ -269,7 +292,19 @@ const requestAdoption = async (req, res) => {
       return res.status(404).json({ message: 'Data stray animal not found' })
     }
 
-    const { reqAddress, reqPhone, reqIdCard, note } = req.body
+    const { reqAddress, reqPhone, reqIdCard, note, homePicture } = req.body
+
+    // Upload pic to Blob
+    const containerName = 'usershome'
+    let imageUrl
+
+    if (homePicture && isExternalUrl(homePicture)) {
+      // If the picture is an external URL, use it directly
+      imageUrl = req.body.homePicture
+    } else if (req.file) {
+      // Set the imageUrl as the Blob URL
+      imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
+    }
 
     // Create a new adoption request
     const adoptionRequest = new AdoptionRequest({
@@ -290,11 +325,20 @@ const requestAdoption = async (req, res) => {
         reqIdCard: loggedInUser.idCard,
       },
       note,
+      homePicture,
       createdOn: new Date(),
     })
 
+    // Conditionally include homePicture if imageUrl is defined
+    if (imageUrl) {
+      adoptionRequest.homePicture = imageUrl
+    }
+
+    // Create a new AdoptionRequest document
+    const newAdoptionRequest = new AdoptionRequest(adoptionRequest)
+
     // Save the adoption request to the database
-    await adoptionRequest.save()
+    await newAdoptionRequest.save()
 
     res.status(201).json({
       message: 'Adoption request submitted successfully:',
@@ -312,6 +356,42 @@ const requestAdoption = async (req, res) => {
   }
 }
 
+// Helper function to check if a URL is external
+function isExternalUrl(url) {
+  return /^(https?:\/\/|www\.)\S+$/.test(url)
+}
+
+// ----------------- GET animal post by Owner -------------------------------------------
+async function getAnimalPostsByOwner(ownerId) {
+  try {
+    // Query stray animals collection based on owner's ID
+    const animalPosts = await StrayAnimal.find({ 'owner.ownerId': ownerId })
+    return animalPosts
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+// ----------------- GET animal post by logged-in user -------------------------------------------
+async function getAnimalPostsByLoggedInUser(req, res) {
+  try {
+    // Step 1: Retrieve the logged-in user data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+    // Step 2: Query stray animals collection based on owner's ID
+    const animalPosts = await getAnimalPostsByOwner(loggedInUser._id.toString())
+
+    // Step 3: Return the filtered animal posts
+    res.json(animalPosts)
+    console.log('Posts own by logged-in user:', animalPosts)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ message: error.message })
+  }
+}
+
 module.exports = {
   getAllStrayAnimals,
   getStrayAnimalById,
@@ -319,4 +399,5 @@ module.exports = {
   updateStrayAnimal,
   deleteStrayAnimal,
   requestAdoption,
+  getAnimalPostsByLoggedInUser,
 }

@@ -19,6 +19,10 @@ const adoptionRequestSchema = new mongoose.Schema({
     reqIdCard: String,
   },
   note: String,
+  homePicture: {
+    type: String,
+    default: null,
+  },
   createdOn: {
     type: Date,
     default: Date.now,

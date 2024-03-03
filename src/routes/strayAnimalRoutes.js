@@ -9,7 +9,7 @@ const strayAnimalController = require('../controllers/strayAnimalController')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
 // ----------------- Get all animals ----------------------------------------------
-router.get('/', strayAnimalController.getAllStrayAnimals)
+router.get('/all', strayAnimalController.getAllStrayAnimals)
 
 // ----------------- Get animal by ID ---------------------------------------------
 router.get('/:saId', strayAnimalController.getStrayAnimalById)
@@ -72,13 +72,18 @@ router.delete(
 // ----------------- Route for posting adoption requests by ID ---------------------
 router.post(
   '/:saId/reqAdoption',
-  upload.none(),
+  // upload.none(),
+  upload.single('homePicture'),
   body('note')
     .optional()
     .isLength({ min: 1, max: 500 })
-    .withMessage('Note must be more than 500 characters'),
+    .withMessage('Note must be less than 500 characters'),
   authenticateUser,
   strayAnimalController.requestAdoption
+)
+
+// ----------------- Get all animals by logged-in user ------------------------------
+router.get('/', authenticateUser, strayAnimalController.getAnimalPostsByLoggedInUser
 )
 
 module.exports = router
