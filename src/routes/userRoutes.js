@@ -50,9 +50,9 @@ const isPhoneNumberUnique = async (value) => {
     }
 
     // Check if the phone number follows the specified format
-    const phoneNumberFormat = /^(09|06|08)\d{8}$/ // Phone number format
+    const phoneNumberFormat = /^(09|06|08|02)\d{8}$/ // Phone number format
     if (!phoneNumberFormat.test(value)) {
-      return Promise.reject('Invalid phone number format. Must start with 06, 08, or 09 and be 10 digits')
+      return Promise.reject('Invalid phone number format. Must start with 02, 06, 08, or 09 and be 10 digits')
     }
 
     return Promise.resolve()
@@ -64,16 +64,6 @@ const isPhoneNumberUnique = async (value) => {
 // Validation function to check if the ID Card is unique
 const isIdCardValidate = async (value) => {
   try {
-    // Check for 5 consecutive same numbers
-    for (let i = 0; i < value.length - 4; i++) {
-      if (value.charAt(i) === value.charAt(i + 1) &&
-          value.charAt(i) === value.charAt(i + 2) &&
-          value.charAt(i) === value.charAt(i + 3) &&
-          value.charAt(i) === value.charAt(i + 4)) {
-        return Promise.reject('ID card cannot contain 5 consecutive same numbers')
-      }
-    }
-
     // Check if the ID card follows the specified format
     const idCardFormat = /^[1-8]\d{12}$/ // ID card format
     if (!idCardFormat.test(value)) {
@@ -164,8 +154,6 @@ router.post(
       .trim()
       .isNumeric()
       .withMessage('Phone number should contain only numbers')
-      // .custom((value) => /^(09|06|08)\d{8}$/.test(value))
-      // .withMessage('Invalid phone number format')
       .isLength({ min: 10, max: 10 })
       .withMessage('Phone number must be 10 digits')
       .custom(isPhoneNumberUnique), // Using the validation function
@@ -218,7 +206,46 @@ router.get('/:userId', authenticateUser, userController.getUserById)
 router.delete('/:userId', authenticateUser, userController.deleteUserById)
 
 // ----------------- Edit user by ID (Admin only) ------------------------------
-router.put('/:userId', authenticateUser, userController.editUserById)
+router.put('/:userId', 
+upload.none(),
+  authenticateUser, 
+  [
+    // Validate username
+    body('username')
+      .optional()
+      .trim()
+      .matches(/^[a-zA-Z0-9._]+$/)
+      .withMessage(
+        'Username should contain only English letters, numbers, ".", and "_"'
+        )
+      .custom((value) => !/\s/.test(value))
+      .withMessage('Username cannot contain whitespace')
+      .isLength({ min: 5, max: 20 })
+      .withMessage(
+        'Username must be between 5 and 20 characters'
+        )
+      .custom(isUsernameUnique), // Using the validation function
+
+    // Validate phoneNumber
+    body('phoneNumber')
+      .optional()
+      .trim()
+      .isNumeric()
+      .withMessage('Phone number should contain only numbers')
+      .isLength({ min: 10, max: 10 })
+      .withMessage('Phone number must be 10 digits')
+      .custom(isPhoneNumberUnique), // Using the validation function
+
+    // Validate idCard
+    body('idCard')
+      .optional()
+      .isNumeric()
+      .withMessage('ID card should contain only numbers')
+      .isLength({ min: 13, max: 13 })
+      .withMessage('ID card must be 13 digits')
+      .custom(isIdCardValidate)   // Using the validation function
+  ],
+ userController.editUserById)
 
 // ----------------- Get logged-in user data ----------------------------------
 router.get('/', authenticateUser, loggedInUserService.getLoggedInUserData)
