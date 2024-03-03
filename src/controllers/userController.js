@@ -15,15 +15,8 @@ const loggedInUserService = require('../services/loggedInUserService')
 //----------------- Register a new user ----------------------------------------------------
 async function registerUser(req, res) {
   console.log('Request file:', req.file)
+  console.log('---------------------------------------------')
   try {
-    const errors = validationResult(req).formatWith(({ value, msg }) => ({
-      value,
-      msg,
-    }))
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
-    }
-
     // Check if picture size exceeds the limit
     if (req.file && req.file.size > 3 * 1024 * 1024) {
       console.log('Image size should be less than 3 MB.')
@@ -53,7 +46,7 @@ async function registerUser(req, res) {
 
     if (userPicture && isExternalUrl(userPicture)) {
       // If the picture is an external URL, use it directly
-      imageUrl = userPicture
+      imageUrl = req.body.userPicture
     } else if (req.file) {
       // Set the imageUrl as the Blob URL
       imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
@@ -94,7 +87,7 @@ async function registerUser(req, res) {
       email,
       password,
       phoneNumber,
-      // userPicture: imageUrl,
+      userPicture,
       idCard: idCard,
       DOB: DOB,
       role: role,
@@ -114,8 +107,6 @@ async function registerUser(req, res) {
     if (imageUrl) {
       newUserFields.userPicture = imageUrl
     }
-    // Create a new user document
-    const newUser = new User(newUserFields)
 
     // If userAddress is provided, validate and add it to the new user document
     if (userAddress) {
@@ -142,6 +133,8 @@ async function registerUser(req, res) {
       }
     }
 
+    // Create a new user document
+    const newUser = new User(newUserFields)
     // Save the new user document to the database
     await newUser.save()
 
