@@ -9,7 +9,7 @@ const strayAnimalController = require('../controllers/strayAnimalController')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
 // ----------------- Get all animals ----------------------------------------------
-router.get('/', strayAnimalController.getAllStrayAnimals)
+router.get('/all', strayAnimalController.getAllStrayAnimals)
 
 // ----------------- Get animal by ID ---------------------------------------------
 router.get('/:saId', strayAnimalController.getStrayAnimalById)
@@ -80,6 +80,10 @@ router.post(
     .withMessage('Note must be more than 500 characters'),
   authenticateUser,
   strayAnimalController.requestAdoption
+)
+
+// ----------------- Get all animals by logged-in user ------------------------------
+router.get('/', authenticateUser, strayAnimalController.getAnimalPostsByLoggedInUser
 )
 
 module.exports = router

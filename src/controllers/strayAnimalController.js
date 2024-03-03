@@ -350,6 +350,37 @@ function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
 }
 
+// ----------------- GET animal post by Owner -------------------------------------------
+async function getAnimalPostsByOwner(ownerId) {
+  try {
+    // Query stray animals collection based on owner's ID
+    const animalPosts = await StrayAnimal.find({ 'owner.ownerId': ownerId })
+    return animalPosts
+  } catch (error) {
+    console.log(error)
+    throw error
+  }
+}
+
+// ----------------- GET animal post by logged-in user -------------------------------------------
+async function getAnimalPostsByLoggedInUser(req, res) {
+  try {
+    // Step 1: Retrieve the logged-in user data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+    // Step 2: Query stray animals collection based on owner's ID
+    const animalPosts = await getAnimalPostsByOwner(loggedInUser._id.toString())
+
+    // Step 3: Return the filtered animal posts
+    res.json(animalPosts)
+    console.log('Posts own by logged-in user:', animalPosts)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ message: error.message })
+  }
+}
+
 module.exports = {
   getAllStrayAnimals,
   getStrayAnimalById,
@@ -357,4 +388,5 @@ module.exports = {
   updateStrayAnimal,
   deleteStrayAnimal,
   requestAdoption,
+  getAnimalPostsByLoggedInUser,
 }
