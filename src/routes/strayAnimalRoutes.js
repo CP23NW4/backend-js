@@ -77,7 +77,7 @@ router.post(
   body('note')
     .optional()
     .isLength({ min: 1, max: 500 })
-    .withMessage('Note must be more than 500 characters'),
+    .withMessage('Note must be less than 500 characters'),
   authenticateUser,
   strayAnimalController.requestAdoption
 )

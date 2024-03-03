@@ -18,12 +18,12 @@ async function registerUser(req, res) {
   console.log('---------------------------------------------')
   try {
     // Check if picture size exceeds the limit
-    if (req.file && req.file.size > 11 * 1024 * 1024) {
-      console.log('Image size should be less than 10MB.')
+    if (req.file && req.file.size > 3 * 1024 * 1024) {
+      console.log('Image size should be less than 3 MB.')
       console.log('---------------------------------------------')
       return res
         .status(400)
-        .json({ message: 'Image size should be less than 10MB.' })
+        .json({ message: 'Image size should be less than 3 MB.' })
     }
 
     const {
@@ -315,6 +315,15 @@ async function editUserById(req, res) {
 
     const existingUserId = existingUserData._id.toString()
 
+    // Validation function
+    const errors = validationResult(req).formatWith(({ value, msg }) => ({
+      value,
+      msg,
+    }))
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
     // Check if the authenticated user is an admin
     if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
       console.log('You are not authorized to edit this user')
@@ -336,12 +345,19 @@ async function editUserById(req, res) {
     const updatedFields = {}
     const currentDate = new Date()
 
-    if (req.body.userAddress) {
-      updatedFields.userAddress = req.body.userAddress
+    if (req.body.username) {
+      updatedFields.username = req.body.username
     }
 
     if (req.body.phoneNumber) {
       updatedFields.phoneNumber = req.body.phoneNumber
+    }
+    if (req.body.idCard) {
+      updatedFields.idCard = req.body.idCard
+    }
+
+    if (req.body.userAddress) {
+      updatedFields.userAddress = req.body.userAddress
     }
 
     // If there are fields to update, add/update the 'updatedOn' field
@@ -356,11 +372,10 @@ async function editUserById(req, res) {
     )
 
     res.json({ message: 'Updated field:', updatedFields })
-    // res.json(updatedStrayAnimal)
     console.log('Updated field:', updatedFields)
     console.log('---------------------------------------------')
   } catch (err) {
-    res.status(500).json({ message: 'Error updating stray animal' })
+    res.status(500).json({ message: 'Error updating user' })
   }
 }
 
@@ -378,6 +393,15 @@ async function editLoggedInUser(req, res) {
     console.log('user post:', existingUserData)
     console.log('---------------------------------------------')
 
+    // Validation function
+    const errors = validationResult(req).formatWith(({ value, msg }) => ({
+      value,
+      msg,
+    }))
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
     // Check if the authenticated user is an admin
     if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
       console.log('You are not authorized to edit this user')
@@ -390,13 +414,21 @@ async function editLoggedInUser(req, res) {
     const updatedFields = {}
     const currentDate = new Date()
 
-    if (req.body.userAddress) {
-      updatedFields.userAddress = req.body.userAddress
+    if (req.body.username) {
+      updatedFields.username = req.body.username
     }
 
     if (req.body.phoneNumber) {
       updatedFields.phoneNumber = req.body.phoneNumber
     }
+    if (req.body.idCard) {
+      updatedFields.idCard = req.body.idCard
+    }
+
+    if (req.body.userAddress) {
+      updatedFields.userAddress = req.body.userAddress
+    }
+
 
     // If there are fields to update, add/update the 'updatedOn' field
     if (Object.keys(updatedFields).length > 0) {

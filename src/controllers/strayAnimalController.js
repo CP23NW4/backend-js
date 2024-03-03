@@ -10,6 +10,8 @@ const AdoptionRequest = require('../models/AdoptionRequest')
 const azureBlobService = require('../services/azureBlobService')
 const loggedInUserService = require('../services/loggedInUserService')
 
+const { validationResult } = require ('express-validator')
+
 //----------------- Get all stray animals --------------------------------------------------
 const getAllStrayAnimals = async (req, res) => {
   try {
@@ -59,12 +61,12 @@ const createStrayAnimal = async (req, res) => {
     }
 
     // Check if picture size exceeds the limit
-    if (req.file && req.file.size > 11 * 1024 * 1024) {
-      console.log('Image size should be less than 10MB.')
+    if (req.file && req.file.size > 3 * 1024 * 1024) {
+      console.log('Image size should be less than 3MB.')
       console.log('---------------------------------------------')
       return res
         .status(400)
-        .json({ message: 'Image size should be less than 11MB.' })
+        .json({ message: 'Image size should be less than 3MB.' })
     }
 
     const { name, type, gender, color, description } = req.body
@@ -261,13 +263,22 @@ const requestAdoption = async (req, res) => {
     //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
+    // Validation function
+    const errors = validationResult(req).formatWith(({ value, msg }) => ({
+      value,
+      msg,
+    }))
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
     // Check if picture size exceeds the limit
-    if (req.file && req.file.size > 11 * 1024 * 1024) {
-      console.log('Image size should be less than 10MB.')
+    if (req.file && req.file.size > 3 * 1024 * 1024) {
+      console.log('Image size should be less than 3MB.')
       console.log('---------------------------------------------')
       return res
         .status(400)
-        .json({ message: 'Image size should be less than 10MB.' })
+        .json({ message: 'Image size should be less than 3MB.' })
     }
 
     // Retrieve stray animal data

@@ -1,13 +1,88 @@
 // userRoutes.js file to define routes related to user authentication.
 const express = require('express')
+const { body, validationResult } = require('express-validator')
 const router = express.Router()
-const { body, oneOf } = require('express-validator')
 const multer = require('multer') // multer is a middleware to handle form-data
 const upload = multer()
 
+const User = require('../models/User')
 const userController = require('../controllers/userController')
 const loggedInUserService = require('../services/loggedInUserService')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
+
+// Validation function to check if the username is unique
+const isUsernameUnique = async (value) => {
+  try {
+    // Check if the username is unique
+    const existingUser = await User.findOne({ username: value })
+    if (existingUser) {
+      return Promise.reject('Username already exists')
+    }
+
+    return Promise.resolve()
+  } catch (error) {
+    return Promise.reject('Error checking username uniqueness')
+  }
+}
+
+// Validation function to check if the email is unique
+const isEmailUnique = async (value) => {
+  try {
+    // Check if the username is unique
+    const existingEmail = await User.findOne({ email: value })
+    if (existingEmail) {
+      return Promise.reject('Email already exists')
+    }
+
+    return Promise.resolve()
+  } catch (error) {
+    return Promise.reject('Error checking email uniqueness')
+  }
+}
+
+// Validation function to check if the username is unique
+const isPhoneNumberUnique = async (value) => {
+  try {
+    // Check if the phone number is unique
+    const existingPhoneNumber = await User.findOne({ phoneNumber: value })
+    if (existingPhoneNumber) {
+      return Promise.reject('Phone number already exists')
+    }
+
+    // Check if the phone number follows the specified format
+    const phoneNumberFormat = /^(09|06|08|02)\d{8}$/ // Phone number format
+    if (!phoneNumberFormat.test(value)) {
+      return Promise.reject('Invalid phone number format. Must start with 02, 06, 08, or 09 and be 10 digits')
+    }
+
+    return Promise.resolve()
+  } catch (error) {
+    return Promise.reject('Error checking phone number uniqueness')
+  }
+}
+
+// Validation function to check if the ID Card is unique
+const isIdCardValidate = async (value) => {
+  try {
+    // Check if the ID card follows the specified format
+    const idCardFormat = /^[1-8]\d{12}$/ // ID card format
+    if (!idCardFormat.test(value)) {
+      return Promise.reject('Invalid ID card format. Must start with 1, 2, 3, 4, 5, 6, 7, or 8 and be 13 digits')
+    }
+
+    // Check if the ID card number is unique
+    const existingIdCard = await User.findOne({ idCard: value })
+    if (existingIdCard) {
+      return Promise.reject('ID card number already exists')
+    }
+
+    return Promise.resolve()
+  } catch (error) {
+    return Promise.reject('Error checking ID card uniqueness and format')
+  }
+}
+
+
 
 // ----------------- User registration ------------------------------------------
 router.post(
@@ -43,7 +118,8 @@ router.post(
       .isLength({ min: 5, max: 20 })
       .withMessage(
         'Username must be more than 5 and less than or equal to 20 characters'
-      ),
+      )
+      .custom(isUsernameUnique), // Using the validation function
 
     // Validate email
     body('email')
@@ -55,7 +131,8 @@ router.post(
       .isLength({ min: 5, max: 50 })
       .withMessage(
         'Email must be more than 5 and less than or equal to 50 characters'
-      ),
+      )
+      .custom(isEmailUnique), // Using the validation function
 
     // Validate password
     body('password')
@@ -77,10 +154,9 @@ router.post(
       .trim()
       .isNumeric()
       .withMessage('Phone number should contain only numbers')
-      .custom((value) => /^(09|06|08)\d{8}$/.test(value))
-      .withMessage('Invalid phone number format')
       .isLength({ min: 10, max: 10 })
-      .withMessage('Phone number must be 10 digits'),
+      .withMessage('Phone number must be 10 digits')
+      .custom(isPhoneNumberUnique), // Using the validation function
 
     // Validate idCard
     body('idCard')
@@ -89,7 +165,8 @@ router.post(
       .isNumeric()
       .withMessage('ID card should contain only numbers')
       .isLength({ min: 13, max: 13 })
-      .withMessage('ID card must be 13 digits'),
+      .withMessage('ID card must be 13 digits')
+      .custom(isIdCardValidate),   // Using the validation function
 
     // Validate userPicture
     // body('userPicture').optional(),
@@ -120,13 +197,93 @@ router.get('/:userId', authenticateUser, userController.getUserById)
 router.delete('/:userId', authenticateUser, userController.deleteUserById)
 
 // ----------------- Edit user by ID (Admin only) ------------------------------
-router.put('/:userId', authenticateUser, userController.editUserById)
+router.put('/:userId', 
+upload.none(),
+  authenticateUser, 
+  [
+    // Validate username
+    body('username')
+      .optional()
+      .trim()
+      .matches(/^[a-zA-Z0-9._]+$/)
+      .withMessage(
+        'Username should contain only English letters, numbers, ".", and "_"'
+        )
+      .custom((value) => !/\s/.test(value))
+      .withMessage('Username cannot contain whitespace')
+      .isLength({ min: 5, max: 20 })
+      .withMessage(
+        'Username must be between 5 and 20 characters'
+        )
+      .custom(isUsernameUnique), // Using the validation function
+
+    // Validate phoneNumber
+    body('phoneNumber')
+      .optional()
+      .trim()
+      .isNumeric()
+      .withMessage('Phone number should contain only numbers')
+      .isLength({ min: 10, max: 10 })
+      .withMessage('Phone number must be 10 digits')
+      .custom(isPhoneNumberUnique), // Using the validation function
+
+    // Validate idCard
+    body('idCard')
+      .optional()
+      .isNumeric()
+      .withMessage('ID card should contain only numbers')
+      .isLength({ min: 13, max: 13 })
+      .withMessage('ID card must be 13 digits')
+      .custom(isIdCardValidate)   // Using the validation function
+  ],
+ userController.editUserById)
 
 // ----------------- Get logged-in user data ----------------------------------
 router.get('/', authenticateUser, loggedInUserService.getLoggedInUserData)
 
 // ----------------- Edit logged-in user data ---------------------------------
-router.put('/', authenticateUser, userController.editLoggedInUser)
+router.put('/',
+  upload.none(),
+  authenticateUser, 
+  [
+    // Validate username
+    body('username')
+      .optional()
+      .trim()
+      .matches(/^[a-zA-Z0-9._]+$/)
+      .withMessage(
+        'Username should contain only English letters, numbers, ".", and "_"'
+        )
+      .custom((value) => !/\s/.test(value))
+      .withMessage('Username cannot contain whitespace')
+      .isLength({ min: 5, max: 20 })
+      .withMessage(
+        'Username must be between 5 and 20 characters'
+        )
+      .custom(isUsernameUnique), // Using the validation function
+
+    // Validate phoneNumber
+    body('phoneNumber')
+      .optional()
+      .trim()
+      .isNumeric()
+      .withMessage('Phone number should contain only numbers')
+      .isLength({ min: 10, max: 10 })
+      .withMessage('Phone number must be 10 digits')
+      .custom(isPhoneNumberUnique), // Using the validation function
+
+    // Validate idCard
+    body('idCard')
+      .optional()
+      .isNumeric()
+      .withMessage('ID card should contain only numbers')
+      .isLength({ min: 13, max: 13 })
+      .withMessage('ID card must be 13 digits')
+      .custom(isIdCardValidate)   // Using the validation function
+  ],
+  userController.editLoggedInUser
+)
+
 
 // ----------------- Delete logged-in user data -------------------------------
 router.delete('/', authenticateUser, userController.deleteLoggedInUser)
