@@ -199,14 +199,21 @@ async function loginUser(req, res) {
 
     // Create token payload
     const tokenPayload = {
-      userId: user._id,
-      username: user.username, // Add any other necessary user data here
+      userId: user._id.toString(),
+      username: user.username,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      DOB: user.DOB,
+      role: user.role,
+      userAddress: user.userAddress,
+      userPicture: user.userPicture,
       // Add more user data as needed
     }
 
     const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '1h' })
     res.status(200).json({ token, user: tokenPayload })
     console.log('User:', identifier, 'logged-in successfully!')
+    console.log(tokenPayload)
     console.log('---------------------------------------------')
   } catch (error) {
     console.log(error)
