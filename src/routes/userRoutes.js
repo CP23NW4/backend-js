@@ -52,7 +52,9 @@ const isPhoneNumberUnique = async (value) => {
     // Check if the phone number follows the specified format
     const phoneNumberFormat = /^(09|06|08|02)\d{8}$/ // Phone number format
     if (!phoneNumberFormat.test(value)) {
-      return Promise.reject('Invalid phone number format. Must start with 02, 06, 08, or 09 and be 10 digits')
+      return Promise.reject(
+        'Invalid phone number format. Must start with 02, 06, 08, or 09 and be 10 digits'
+      )
     }
 
     return Promise.resolve()
@@ -67,7 +69,9 @@ const isIdCardValidate = async (value) => {
     // Check if the ID card follows the specified format
     const idCardFormat = /^[1-8]\d{12}$/ // ID card format
     if (!idCardFormat.test(value)) {
-      return Promise.reject('Invalid ID card format. Must start with 1, 2, 3, 4, 5, 6, 7, or 8 and be 13 digits')
+      return Promise.reject(
+        'Invalid ID card format. Must start with 1, 2, 3, 4, 5, 6, 7, or 8 and be 13 digits'
+      )
     }
 
     // Check if the ID card number is unique
@@ -86,28 +90,27 @@ const isIdCardValidate = async (value) => {
 const isAgeValid = async (value) => {
   try {
     // Calculate the user's age based on the provided date of birth
-    const currentDate = new Date();
-    const dob = new Date(value);
-    const age = currentDate.getFullYear() - dob.getFullYear();
+    const currentDate = new Date()
+    const dob = new Date(value)
+    const age = currentDate.getFullYear() - dob.getFullYear()
 
     // Adjust age if the current date hasn't reached the user's birth month yet
-    // if (currentDate.getMonth() < dob.getMonth() || 
-    //     (currentDate.getMonth() === dob.getMonth() && 
+    // if (currentDate.getMonth() < dob.getMonth() ||
+    //     (currentDate.getMonth() === dob.getMonth() &&
     //     currentDate.getDate() < dob.getDate())) {
     //   age--;
     // }
 
     // Check if the age is at least 18 years
     if (age < 18) {
-      return Promise.reject('You must be at least 18 years old to register');
+      return Promise.reject('You must be at least 18 years old to register')
     }
 
-    return Promise.resolve();
+    return Promise.resolve()
   } catch (error) {
-    return Promise.reject('Error checking age');
+    return Promise.reject('Error checking age')
   }
 }
-
 
 // ----------------- User registration ------------------------------------------
 router.post(
@@ -183,14 +186,13 @@ router.post(
       .withMessage('Phone number must be 10 digits')
       .custom(isPhoneNumberUnique), // Using the validation function
 
-      // Validate DOB
-      body('DOB')
+    // Validate DOB
+    body('DOB')
       .notEmpty()
       .withMessage('Date of birth is required')
       .isISO8601()
       .withMessage('Invalid date of birth format')
       .custom(isAgeValid), // Using the custom validation function
-
 
     // Validate idCard
     body('idCard')
@@ -200,12 +202,11 @@ router.post(
       .withMessage('ID card should contain only numbers')
       .isLength({ min: 13, max: 13 })
       .withMessage('ID card must be 13 digits')
-      .custom(isIdCardValidate),   // Using the validation function
-
+      .custom(isIdCardValidate), // Using the validation function
 
     // Validate userPicture
     // body('userPicture').optional(),
- 
+
     body('homePicture').optional(),
     body('userAddress').optional(),
     // .trim()
@@ -220,10 +221,10 @@ router.post(
 )
 
 // ----------------- User login -----------------------------------------------
-router.post('/login', userController.loginUser)
+router.post('/login', upload.none(), userController.loginUser)
 
 //----------------- Get all users ---------------------------------------------
-router.get('/all', authenticateUser, userController.getAllUsers)
+router.get('/', authenticateUser, userController.getAllUsers)
 
 // ----------------- Get user by ID -------------------------------------------
 router.get('/:userId', authenticateUser, userController.getUserById)
@@ -232,9 +233,10 @@ router.get('/:userId', authenticateUser, userController.getUserById)
 router.delete('/:userId', authenticateUser, userController.deleteUserById)
 
 // ----------------- Edit user by ID (Admin only) ------------------------------
-router.put('/:userId', 
-upload.none(),
-  authenticateUser, 
+router.put(
+  '/:userId',
+  upload.none(),
+  authenticateUser,
   [
     // Validate username
     body('username')
@@ -243,13 +245,11 @@ upload.none(),
       .matches(/^[a-zA-Z0-9._]+$/)
       .withMessage(
         'Username should contain only English letters, numbers, ".", and "_"'
-        )
+      )
       .custom((value) => !/\s/.test(value))
       .withMessage('Username cannot contain whitespace')
       .isLength({ min: 5, max: 20 })
-      .withMessage(
-        'Username must be between 5 and 20 characters'
-        )
+      .withMessage('Username must be between 5 and 20 characters')
       .custom(isUsernameUnique), // Using the validation function
 
     // Validate phoneNumber
@@ -269,17 +269,24 @@ upload.none(),
       .withMessage('ID card should contain only numbers')
       .isLength({ min: 13, max: 13 })
       .withMessage('ID card must be 13 digits')
-      .custom(isIdCardValidate)   // Using the validation function
+      .custom(isIdCardValidate), // Using the validation function
   ],
- userController.editUserById)
+
+  userController.editUserById
+)
 
 // ----------------- Get logged-in user data ----------------------------------
-router.get('/', authenticateUser, loggedInUserService.getLoggedInUserData)
+router.get(
+  '/user/info',
+  authenticateUser,
+  loggedInUserService.getLoggedInUserData
+)
 
 // ----------------- Edit logged-in user data ---------------------------------
-router.put('/',
+router.put(
+  '/',
   upload.none(),
-  authenticateUser, 
+  authenticateUser,
   [
     // Validate username
     body('username')
@@ -288,13 +295,11 @@ router.put('/',
       .matches(/^[a-zA-Z0-9._]+$/)
       .withMessage(
         'Username should contain only English letters, numbers, ".", and "_"'
-        )
+      )
       .custom((value) => !/\s/.test(value))
       .withMessage('Username cannot contain whitespace')
       .isLength({ min: 5, max: 20 })
-      .withMessage(
-        'Username must be between 5 and 20 characters'
-        )
+      .withMessage('Username must be between 5 and 20 characters')
       .custom(isUsernameUnique), // Using the validation function
 
     // Validate phoneNumber
@@ -314,11 +319,10 @@ router.put('/',
       .withMessage('ID card should contain only numbers')
       .isLength({ min: 13, max: 13 })
       .withMessage('ID card must be 13 digits')
-      .custom(isIdCardValidate)   // Using the validation function
+      .custom(isIdCardValidate), // Using the validation function
   ],
   userController.editLoggedInUser
 )
-
 
 // ----------------- Delete logged-in user data -------------------------------
 router.delete('/', authenticateUser, userController.deleteLoggedInUser)
