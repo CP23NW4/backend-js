@@ -82,6 +82,31 @@ const isIdCardValidate = async (value) => {
   }
 }
 
+// Validation function to check if the user's age is at least 18 years
+const isAgeValid = async (value) => {
+  try {
+    // Calculate the user's age based on the provided date of birth
+    const currentDate = new Date();
+    const dob = new Date(value);
+    const age = currentDate.getFullYear() - dob.getFullYear();
+
+    // Adjust age if the current date hasn't reached the user's birth month yet
+    // if (currentDate.getMonth() < dob.getMonth() || 
+    //     (currentDate.getMonth() === dob.getMonth() && 
+    //     currentDate.getDate() < dob.getDate())) {
+    //   age--;
+    // }
+
+    // Check if the age is at least 18 years
+    if (age < 18) {
+      return Promise.reject('You must be at least 18 years old to register');
+    }
+
+    return Promise.resolve();
+  } catch (error) {
+    return Promise.reject('Error checking age');
+  }
+}
 
 
 // ----------------- User registration ------------------------------------------
@@ -158,6 +183,15 @@ router.post(
       .withMessage('Phone number must be 10 digits')
       .custom(isPhoneNumberUnique), // Using the validation function
 
+      // Validate DOB
+      body('DOB')
+      .notEmpty()
+      .withMessage('Date of birth is required')
+      .isISO8601()
+      .withMessage('Invalid date of birth format')
+      .custom(isAgeValid), // Using the custom validation function
+
+
     // Validate idCard
     body('idCard')
       .notEmpty()
@@ -167,6 +201,7 @@ router.post(
       .isLength({ min: 13, max: 13 })
       .withMessage('ID card must be 13 digits')
       .custom(isIdCardValidate),   // Using the validation function
+
 
     // Validate userPicture
     // body('userPicture').optional(),

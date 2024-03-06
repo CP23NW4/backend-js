@@ -26,6 +26,15 @@ async function registerUser(req, res) {
         .json({ message: 'Image size should be less than 3 MB.' })
     }
 
+    // Validation function
+    const errors = validationResult(req).formatWith(({ value, msg }) => ({
+      value,
+      msg,
+    }))
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
     const {
       userPicture,
       name,
@@ -53,12 +62,12 @@ async function registerUser(req, res) {
     }
 
     // Check for required fields
-    if (!name || !username || !email || !password || !phoneNumber) {
+    if (!name || !username || !email || !password || !phoneNumber || !DOB) {
       console.log('Missing required fields')
       console.log('---------------------------------------------')
       return res.status(400).json({
         message:
-          'Missing required fields: name, username, email, password, and phone number',
+          'Missing required fields: name, username, email, password, DOB, and phone number',
       })
     }
 

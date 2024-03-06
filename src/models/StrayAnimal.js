@@ -12,6 +12,11 @@ const strayAnimalSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  status: {
+    type: String,
+    enum: ['Available', 'Unavailable'],
+    default: 'Available',
+  },
   owner: {
     ownerId: String,
     ownerUsername: String,
