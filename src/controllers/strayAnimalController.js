@@ -69,6 +69,15 @@ const createStrayAnimal = async (req, res) => {
         .json({ message: 'Image size should be less than 3MB.' })
     }
 
+    // Validation function
+    const errors = validationResult(req).formatWith(({ value, msg }) => ({
+      value,
+      msg,
+    }))
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
     const { name, type, gender, color, description } = req.body
 
     // Handle image upload to Azure Blob Storage
@@ -166,6 +175,15 @@ const updateStrayAnimal = async (req, res) => {
       return res
         .status(403)
         .json({ message: 'You are not authorized to edit this animal' })
+    }
+
+    // Validation function
+    const errors = validationResult(req).formatWith(({ value, msg }) => ({
+      value,
+      msg,
+    }))
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
     }
 
     const updatedFields = {}
