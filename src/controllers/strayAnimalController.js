@@ -186,6 +186,9 @@ const updateStrayAnimal = async (req, res) => {
     if (req.body.description) {
       updatedFields.description = req.body.description
     }
+    if (req.body.status) {
+      updatedFields.status = req.body.status
+    }
 
     // If there are fields to update, add/update the 'updatedOn' field
     if (Object.keys(updatedFields).length > 0) {
