@@ -21,7 +21,7 @@ mongoose.connect('mongodb+srv://mnwadmin:meowandwoof@meowandwoof.gcedq3t.mongodb
 
 // Routes
 app.use('/strayAnimals', strayAnimalRoutes);
-app.use('/users', userRoutes); // Use user routes at '/users'
+app.use('/api/users', userRoutes); // Use user routes at '/users'
 
 // Error handling middleware for authentication issues
 app.use((err, req, res, next) => {
