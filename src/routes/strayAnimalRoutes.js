@@ -93,4 +93,5 @@ router.get('/sender/reqAdoption', authenticateUser, strayAnimalController.getAdo
 
 // ----------------- GET adoption requests by owners (Reciever) ------------
 router.get('/reciever/reqAdoption', authenticateUser, strayAnimalController.getOwnersAdoptionRequestsByLoggedInUser)
+
 module.exports = router

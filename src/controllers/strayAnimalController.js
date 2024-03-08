@@ -433,7 +433,7 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
   }
 }
 
-// ----------------- GET adoption requests by owners (Reciever) -------------------------------------------
+// ----------------- GET adoption requests by owners post (Reciever) -------------------------------------------
 async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
   try {
     // Step 1: Retrieve the logged-in user data
