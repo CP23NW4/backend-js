@@ -336,6 +336,7 @@ const requestAdoption = async (req, res) => {
       },
       animal: {
         saId: dataInSaId._id,
+        saName: dataInSaId.name,
       },
       requester: {
         reqId: loggedInUser._id,
@@ -413,6 +414,27 @@ async function getAnimalPostsByLoggedInUser(req, res) {
   }
 }
 
+// ----------------- GET adoption requests by logged-in user -------------------------------------------
+
+const getAdoptionRequestsByLoggedInUser = async (req, res) => {
+  try {
+    // Extract the logged-in user's ID from the authentication token
+    const loggedInUserId = req.user.userId
+
+    // Query adoption requests collection to find requests matching the logged-in user's ID
+    const adoptionRequests = await AdoptionRequest.find({ 'requester.reqId': loggedInUserId })
+
+    // Return the adoption requests for the logged-in user
+    res.json(adoptionRequests)
+    console.log('Get adoption request by logged-in user:', adoptionRequests)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    console.error('Error fetching adoption requests:', error);
+    res.status(500).json({ message: 'Error fetching adoption requests' })
+  }
+};
+456
+
 module.exports = {
   getAllStrayAnimals,
   getStrayAnimalById,
@@ -421,4 +443,5 @@ module.exports = {
   deleteStrayAnimal,
   requestAdoption,
   getAnimalPostsByLoggedInUser,
+  getAdoptionRequestsByLoggedInUser
 }

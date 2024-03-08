@@ -9,6 +9,7 @@ const adoptionRequestSchema = new mongoose.Schema({
   },
   animal: {
     saId: String,
+    saName: String,
   },
   requester: {
     reqId: String,
@@ -22,7 +23,7 @@ const adoptionRequestSchema = new mongoose.Schema({
   homePicture: {
     type: String,
     default: null,
-  },
+  },  
   createdOn: {
     type: Date,
     default: Date.now,
