@@ -220,7 +220,7 @@ router.post(
 )
 
 // ----------------- User login -----------------------------------------------
-router.post('/login', userController.loginUser)
+router.post('/login',upload.none(), userController.loginUser)
 
 //----------------- Get all users ---------------------------------------------
 router.get('/all', authenticateUser, userController.getAllUsers)

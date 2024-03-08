@@ -414,8 +414,7 @@ async function getAnimalPostsByLoggedInUser(req, res) {
   }
 }
 
-// ----------------- GET adoption requests by logged-in user -------------------------------------------
-
+// ----------------- GET adoption requests by logged-in user (Sender) ------------------------------
 const getAdoptionRequestsByLoggedInUser = async (req, res) => {
   try {
     // Extract the logged-in user's ID from the authentication token
@@ -429,11 +428,31 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
     console.log('Get adoption request by logged-in user:', adoptionRequests)
     console.log('---------------------------------------------')
   } catch (error) {
-    console.error('Error fetching adoption requests:', error);
+    console.error('Error fetching adoption requests:', error)
     res.status(500).json({ message: 'Error fetching adoption requests' })
   }
-};
-456
+}
+
+// ----------------- GET adoption requests by owners (Reciever) -------------------------------------------
+async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
+  try {
+    // Step 1: Retrieve the logged-in user data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+    // Step 2: Query adoption requests collection based on the owner's ID (logged-in user's ID)
+    const filteredRequests = await AdoptionRequest.find({
+      'owner.ownerId': loggedInUser._id
+    })
+
+    // Step 3: Return the adoption requests
+    res.json(filteredRequests);
+    console.log('Get adoption requests by owners post:', filteredRequests)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    console.error('Error retrieving adoption requests:', error)
+    res.status(500).json({ message: 'Error retrieving adoption requests' })
+  }
+}
 
 module.exports = {
   getAllStrayAnimals,
@@ -443,5 +462,6 @@ module.exports = {
   deleteStrayAnimal,
   requestAdoption,
   getAnimalPostsByLoggedInUser,
-  getAdoptionRequestsByLoggedInUser
+  getAdoptionRequestsByLoggedInUser,
+  getOwnersAdoptionRequestsByLoggedInUser,
 }
