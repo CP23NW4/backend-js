@@ -313,6 +313,12 @@ const requestAdoption = async (req, res) => {
       return res.status(404).json({ message: 'Data stray animal not found' })
     }
 
+    // Check if the logged-in user is the owner of the stray animal
+    if (loggedInUser._id.toString() === dataInSaId.owner.ownerId) {
+      console.log('Owners cannot request adoption for their own stray animals')
+      return res.status(403).json({ message: 'Owners cannot request adoption for their own stray animals' })
+    }
+
     const { reqAddress, reqPhone, reqIdCard, note, homePicture } = req.body
 
     // Upload pic to Blob
