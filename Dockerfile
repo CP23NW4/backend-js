@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8090
 
 # Command to run your application
-CMD ["node", "app.js"]
+CMD ["node", "src/app.js"]
