@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
       default: 'general'
     },
     userAddress: String,
+    verificationToken: String,
     createdOn: {
       type: Date,
       default: Date.now

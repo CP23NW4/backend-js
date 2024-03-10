@@ -8,8 +8,12 @@ require('dotenv').config({ path: '../.env' })
 const secretKey = process.env.SECRET_KEY // Accessing the secret key from the environment variable}
 
 const { validationResult } = require('express-validator')
-const { generateVerificationToken, sendVerificationEmail } = require('../middlewares/emailVerification');
+const {
+  generateVerificationToken,
+  sendVerificationEmail,
+} = require('../middlewares/emailVerification')
 
+const temporaryStorage = {} // Temporary storage for registration data
 
 // Register a new user
 async function registerUser(req, res) {
@@ -47,10 +51,10 @@ async function registerUser(req, res) {
     }
 
     // Generate verification token
-    const verificationToken = generateVerificationToken();
+    const verificationToken = generateVerificationToken()
 
-    // Create a new user object with required fields
-    const newUser = new User({
+    // Save registration data in temporary storage
+    temporaryStorage[verificationToken] = {
       name,
       username,
       email,
@@ -62,20 +66,50 @@ async function registerUser(req, res) {
       role: 'general', // Default role
       userAddress: userAddress || null,
       createdOn: new Date(),
-      updatedOn: new Date(),
       verificationToken,
-    })
-
-    await newUser.save()
+    }
 
     // Send verification email
-    await sendVerificationEmail(newUser.email, verificationToken);
-
+    await sendVerificationEmail(email, verificationToken)
 
     res
       .status(201)
-      .json({ message: 'User created successfully! Please verify your email address.', user: newUser })
-    } catch (error) {
+      .json({
+        message: 'User created successfully! Please verify your email address.',
+      })
+      console.log('User created successfully! Please verify your email address.', temporaryStorage[verificationToken])
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+async function verifyUser(req, res) {
+  try {
+    const { token } = req.params
+
+    const userRegistrationData = temporaryStorage[token]
+    if (!userRegistrationData) {
+      return res
+        .status(404)
+        .json({
+          message: 'User registration data not found or already verified',
+        })
+    }
+
+    // Create a new user object using registration data
+    const newUser = new User(userRegistrationData)
+
+    // Save user to the database
+    await newUser.save()
+
+    // Clear temporary storage
+    delete temporaryStorage[token]
+
+    res
+      .status(200)
+      .json({ message: 'User email verified successfully!', user: newUser })
+    console.log(`User ${newUser.email} confirmed registration.`, newUser)
+  } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
@@ -297,4 +331,5 @@ module.exports = {
   getUserById,
   deleteUserById,
   editUserById,
+  verifyUser,
 }

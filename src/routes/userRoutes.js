@@ -9,10 +9,11 @@ const {
   getUserById,
   deleteUserById,
   editUserById,
+  verifyUser
 } = require('../controllers/userController')
 const User = require('../models/User')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
-const { verifyUser } = require('../middlewares/emailVerification');
+// const { verifyUser } = require('../middlewares/emailVerification');
 
 // User registration
 router.post(
