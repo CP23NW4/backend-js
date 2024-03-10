@@ -12,6 +12,10 @@ const User = require('../models/User')
 const azureBlobService = require('../services/azureBlobService') // Adjust the path as needed
 const loggedInUserService = require('../services/loggedInUserService')
 
+// Import email verification middleware
+const emailVerification = require('../middlewares/emailVerification')
+const temporaryStorage = {} // Temporary storage for registration data
+
 //----------------- Register a new user ----------------------------------------------------
 async function registerUser(req, res) {
   console.log('Request file:', req.file)
@@ -50,8 +54,8 @@ async function registerUser(req, res) {
     } = req.body
 
     // Upload pic to Blob
-    const containerName = 'users'
     let imageUrl
+    const containerName = 'users'
 
     if (userPicture && isExternalUrl(userPicture)) {
       // If the picture is an external URL, use it directly
@@ -89,8 +93,11 @@ async function registerUser(req, res) {
       addressLine2,
     } = userAddress
 
-    // Create a new user object with required fields
-    const newUserFields = new User({
+    // Generate email verification token
+    const verificationToken = emailVerification.generateVerificationToken()
+
+    // Save registration data in temporary storage
+    temporaryStorage[verificationToken] = {
       name,
       username,
       email,
@@ -110,11 +117,12 @@ async function registerUser(req, res) {
       },
       homePicture: homePicture,
       createdOn: new Date(),
-      updatedOn: new Date(),
-    })
+      verificationToken,
+    }
+
     // Conditionally include userPicture if imageUrl is defined
     if (imageUrl) {
-      newUserFields.userPicture = imageUrl
+      temporaryStorage[verificationToken].userPicture = imageUrl
     }
 
     // If userAddress is provided, validate and add it to the new user document
@@ -132,7 +140,7 @@ async function registerUser(req, res) {
       }
 
       // Add the validated address fields to the newUserFields object
-      newUserFields.userAddress = {
+      temporaryStorage[verificationToken].userAddress = {
         postCode,
         tambonThaiShort,
         districtThaiShort,
@@ -142,19 +150,23 @@ async function registerUser(req, res) {
       }
     }
 
-    // Create a new user document
-    const newUser = new User(newUserFields)
-    // Save the new user document to the database
-    await newUser.save()
+    // Send verification email
+    await emailVerification.sendVerificationEmail(email, verificationToken)
 
-    res
-      .status(201)
-      .json({ message: 'User created successfully!', user: newUser })
-    console.log('User created successfully!', newUser)
+    res.status(201).json({
+      message:
+        'User registration successfully! Please verify your email address.',
+      email: temporaryStorage[verificationToken].email,
+    })
+    console.log(
+      'User registration successfully! Please verify your email address.',
+      {
+        email: temporaryStorage[verificationToken].email,
+        token: temporaryStorage[verificationToken].verificationToken,
+      }
+    )
     console.log('---------------------------------------------')
   } catch (error) {
-    console.log(error)
-    console.log('---------------------------------------------')
     res.status(500).json({ message: error.message })
   }
 }
@@ -162,6 +174,40 @@ async function registerUser(req, res) {
 // Helper function to check if a URL is external
 function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
+}
+
+// ----------------- Verify by send email to user -----------------------------------------------
+
+async function verifyUser(req, res) {
+  try {
+    const { token } = req.params
+
+    const userRegistrationData = temporaryStorage[token]
+    if (!userRegistrationData) {
+      console.log('User registration data not found or already verified')
+      console.log('---------------------------------------------')
+      return res.status(404).json({
+        message: 'User registration data not found or already verified',
+      })
+    }
+
+    // Create a new user object using registration data
+    const newUser = new User(userRegistrationData)
+
+    // Save user to the database
+    await newUser.save()
+
+    // Clear temporary storage
+    delete temporaryStorage[token]
+
+    res
+      .status(200)
+      .json({ message: 'User email verified successfully!', user: newUser })
+    console.log(`User ${newUser.email} confirmed registration.`, newUser)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
 }
 
 // ----------------- Login user -----------------------------------------------------
@@ -445,7 +491,6 @@ async function editLoggedInUser(req, res) {
       updatedFields.userAddress = req.body.userAddress
     }
 
-
     // If there are fields to update, add/update the 'updatedOn' field
     if (Object.keys(updatedFields).length > 0) {
       updatedFields.updatedOn = currentDate
@@ -523,4 +568,5 @@ module.exports = {
   // getLoggedInUserData,
   editLoggedInUser,
   deleteLoggedInUser,
+  verifyUser,
 }

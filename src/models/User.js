@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  verificationToken: String,
   createdOn: {
     type: Date,
     default: Date.now,
