@@ -12,6 +12,16 @@ const loggedInUserService = require('../services/loggedInUserService')
 
 const { validationResult } = require ('express-validator')
 
+//----------------- Validation function --------------------------------------------------
+function validate(req, res) {
+  const errors = validationResult(req).formatWith(({ value, msg }) => ({
+      value,
+      msg,
+  }))
+  if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+  }
+}
 //----------------- Get all stray animals --------------------------------------------------
 const getAllStrayAnimals = async (req, res) => {
   try {
@@ -69,14 +79,8 @@ const createStrayAnimal = async (req, res) => {
         .json({ message: 'Image size should be less than 3MB.' })
     }
 
-    // Validation function
-    const errors = validationResult(req).formatWith(({ value, msg }) => ({
-      value,
-      msg,
-    }))
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
-    }
+    // Call the validation function
+    validate(req, res)
 
     const { name, type, gender, color, description } = req.body
 
@@ -118,6 +122,7 @@ const createStrayAnimal = async (req, res) => {
         ownerUsername: loggedInUser.username,
         phoneNumber: loggedInUser.phoneNumber,
         role: loggedInUser.role,
+        ownerAddress: loggedInUser.userAddress,
       },
       createdOn: new Date(),
     })
@@ -177,14 +182,8 @@ const updateStrayAnimal = async (req, res) => {
         .json({ message: 'You are not authorized to edit this animal' })
     }
 
-    // Validation function
-    const errors = validationResult(req).formatWith(({ value, msg }) => ({
-      value,
-      msg,
-    }))
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
-    }
+    // Call the validation function
+    validate(req, res)
 
     const updatedFields = {}
     const currentDate = new Date()
@@ -284,14 +283,8 @@ const requestAdoption = async (req, res) => {
     //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
-    // Validation function
-    const errors = validationResult(req).formatWith(({ value, msg }) => ({
-      value,
-      msg,
-    }))
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
-    }
+    // Call the validation function
+    validate(req, res)
 
     // Check if picture size exceeds the limit
     if (req.file && req.file.size > 3 * 1024 * 1024) {
@@ -425,13 +418,14 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
   try {
     // Extract the logged-in user's ID from the authentication token
     const loggedInUserId = req.user.userId
+    const userName = req.user.username
 
     // Query adoption requests collection to find requests matching the logged-in user's ID
     const adoptionRequests = await AdoptionRequest.find({ 'requester.reqId': loggedInUserId })
 
     // Return the adoption requests for the logged-in user
-    res.json(adoptionRequests)
-    console.log('Get adoption request by logged-in user:', adoptionRequests)
+    res.json({  userName, message: 'Adoption request form by requester', adoptionRequests })
+    console.log('Get adoption request by requester:', adoptionRequests)
     console.log('---------------------------------------------')
   } catch (error) {
     console.error('Error fetching adoption requests:', error)
@@ -444,15 +438,16 @@ async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
   try {
     // Step 1: Retrieve the logged-in user data
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+    const userName = req.user.username
 
     // Step 2: Query adoption requests collection based on the owner's ID (logged-in user's ID)
-    const filteredRequests = await AdoptionRequest.find({
+    const adoptionRequests = await AdoptionRequest.find({
       'owner.ownerId': loggedInUser._id
     })
 
     // Step 3: Return the adoption requests
-    res.json(filteredRequests);
-    console.log('Get adoption requests by owners post:', filteredRequests)
+    res.json({ userName, message: 'Adoption requests form by owners post', adoptionRequests });
+    console.log('Get adoption requests by owners post:', adoptionRequests)
     console.log('---------------------------------------------')
   } catch (error) {
     console.error('Error retrieving adoption requests:', error)
@@ -461,6 +456,7 @@ async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
 }
 
 module.exports = {
+  validate,
   getAllStrayAnimals,
   getStrayAnimalById,
   createStrayAnimal,

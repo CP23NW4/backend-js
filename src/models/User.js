@@ -26,15 +26,10 @@ const userSchema = new mongoose.Schema({
   },
   userAddress: {
     postCode: Number,
-    tambonThaiShort: String,
-    districtThaiShort: String,
-    provinceThai: String,
-    addressLine1: String,  // for number of house, Urban
-    addressLine2: String, // for alley, road etc.
-  },
-  homePicture: {
-    type: String,
-    default: null,
+    subDistrict: String,
+    district: String,
+    province: String,
+    homeAddress: String,  // for number of house, Urban
   },
   createdOn: {
     type: Date,

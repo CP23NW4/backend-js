@@ -12,6 +12,17 @@ const User = require('../models/User')
 const azureBlobService = require('../services/azureBlobService') // Adjust the path as needed
 const loggedInUserService = require('../services/loggedInUserService')
 
+//----------------- Validation function --------------------------------------------------
+function validate(req, res) {
+  const errors = validationResult(req).formatWith(({ value, msg }) => ({
+      value,
+      msg,
+  }))
+  if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+  }
+}
+
 //----------------- Register a new user ----------------------------------------------------
 async function registerUser(req, res) {
   console.log('Request file:', req.file)
@@ -26,14 +37,8 @@ async function registerUser(req, res) {
         .json({ message: 'Image size should be less than 3 MB.' })
     }
 
-    // Validation function
-    const errors = validationResult(req).formatWith(({ value, msg }) => ({
-      value,
-      msg,
-    }))
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
-    }
+    // Call the validation function
+    validate(req, res)
 
     const {
       userPicture,
@@ -46,7 +51,6 @@ async function registerUser(req, res) {
       DOB,
       role,
       userAddress,
-      homePicture,
     } = req.body
 
     // Upload pic to Blob
@@ -82,11 +86,10 @@ async function registerUser(req, res) {
 
     const {
       postCode,
-      tambonThaiShort,
-      districtThaiShort,
-      provinceThai,
-      addressLine1,
-      addressLine2,
+      subDistrict,
+      district,
+      province,
+      homeAddress,
     } = userAddress
 
     // Create a new user object with required fields
@@ -102,13 +105,11 @@ async function registerUser(req, res) {
       role: role,
       userAddress: {
         postCode,
-        tambonThaiShort,
-        districtThaiShort,
-        provinceThai,
-        addressLine1,
-        addressLine2,
+        subDistrict,
+        district,
+        province,
+        homeAddress,
       },
-      homePicture: homePicture,
       createdOn: new Date(),
       updatedOn: new Date(),
     })
@@ -122,9 +123,10 @@ async function registerUser(req, res) {
       // Ensure that the required address fields are present
       if (
         !postCode ||
-        !tambonThaiShort ||
-        !districtThaiShort ||
-        !provinceThai
+        !subDistrict ||
+        !district ||
+        !province ||
+        !homeAddress
       ) {
         return res
           .status(400)
@@ -134,11 +136,10 @@ async function registerUser(req, res) {
       // Add the validated address fields to the newUserFields object
       newUserFields.userAddress = {
         postCode,
-        tambonThaiShort,
-        districtThaiShort,
-        provinceThai,
-        addressLine1,
-        addressLine2,
+        subDistrict,
+        district,
+        province,
+        homeAddress,
       }
     }
 
@@ -207,7 +208,6 @@ async function loginUser(req, res) {
       role: user.role,
       userAddress: user.userAddress,
       userPicture: user.userPicture,
-      // Add more user data as needed
     }
 
     const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '1h' })
@@ -236,7 +236,7 @@ async function getAllUsers(req, res) {
   }
 }
 
-// Get user by ID
+// ----------------- Get user by ID -------------------------------------------
 async function getUserById(req, res) {
   try {
     // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
@@ -331,14 +331,8 @@ async function editUserById(req, res) {
 
     const existingUserId = existingUserData._id.toString()
 
-    // Validation function
-    const errors = validationResult(req).formatWith(({ value, msg }) => ({
-      value,
-      msg,
-    }))
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
-    }
+    // Call the validation function
+    validate(req, res)
 
     // Check if the authenticated user is an admin
     if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
@@ -409,14 +403,8 @@ async function editLoggedInUser(req, res) {
     console.log('user post:', existingUserData)
     console.log('---------------------------------------------')
 
-    // Validation function
-    const errors = validationResult(req).formatWith(({ value, msg }) => ({
-      value,
-      msg,
-    }))
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
-    }
+    // Call the validation function
+    validate(req, res)
 
     // Check if the authenticated user is an admin
     if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
@@ -514,6 +502,7 @@ async function deleteLoggedInUser(req, res) {
 }
 
 module.exports = {
+  validate,
   registerUser,
   loginUser,
   getAllUsers,

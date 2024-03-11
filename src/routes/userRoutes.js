@@ -94,13 +94,6 @@ const isAgeValid = async (value) => {
     const dob = new Date(value)
     const age = currentDate.getFullYear() - dob.getFullYear()
 
-    // Adjust age if the current date hasn't reached the user's birth month yet
-    // if (currentDate.getMonth() < dob.getMonth() ||
-    //     (currentDate.getMonth() === dob.getMonth() &&
-    //     currentDate.getDate() < dob.getDate())) {
-    //   age--;
-    // }
-
     // Check if the age is at least 18 years
     if (age < 18) {
       return Promise.reject('You must be at least 18 years old to register')
@@ -110,6 +103,32 @@ const isAgeValid = async (value) => {
   } catch (error) {
     return Promise.reject('Error checking age')
   }
+}
+
+// Validation function to check user address
+const isAddressVlidate = (value) => {
+  try {
+    const { postCode, subDistrict, district, province, homeAddress } = value
+  if (!postCode) {
+    return Promise.reject('Post code is required');
+  }
+  if (!subDistrict) {
+    return Promise.reject('Sub-district is required');
+  }
+  if (!district) {
+    return Promise.reject('District is required');
+  }
+  if (!province) {
+    return Promise.reject('Province is required');
+  }
+  if (!homeAddress) {
+    return Promise.reject('Home address is required');
+  }
+
+  return Promise.resolve()
+} catch (error) {
+  return Promise.reject('Error checking age')
+}
 }
 
 // ----------------- User registration ------------------------------------------
@@ -207,15 +226,14 @@ router.post(
     // Validate userPicture
     // body('userPicture').optional(),
 
-    body('homePicture').optional(),
+    // Validate userAddress
     body('userAddress').optional(),
-    // .trim()
-    // .notEmpty()
-    // .withMessage('User address is required')
-    // .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
-    // .withMessage(
-    //   'User address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
-    // ),
+    body('userAddress.homeAddress')
+      .optional()
+      .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
+      .withMessage(
+      'User home address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
+    ),
   ],
   userController.registerUser
 )
@@ -270,6 +288,15 @@ router.put(
       .isLength({ min: 13, max: 13 })
       .withMessage('ID card must be 13 digits')
       .custom(isIdCardValidate), // Using the validation function
+
+    // Validate userAddress
+    body('userAddress').optional(),
+    body('userAddress.homeAddress')
+      .optional()
+      .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
+      .withMessage(
+      'User home address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
+    ),
   ],
 
   userController.editUserById
@@ -320,6 +347,14 @@ router.put(
       .isLength({ min: 13, max: 13 })
       .withMessage('ID card must be 13 digits')
       .custom(isIdCardValidate), // Using the validation function
+
+    // Validate userAddress
+    body('userAddress').custom(isAddressVlidate),
+    body('userAddress.homeAddress')
+      .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
+      .withMessage(
+      'User home address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
+    ),
   ],
   userController.editLoggedInUser
 )

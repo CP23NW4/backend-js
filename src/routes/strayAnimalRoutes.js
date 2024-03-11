@@ -21,12 +21,19 @@ router.post(
   [
     body('name')
       .notEmpty()
+      .withMessage('Name is required')
       .isLength({ min: 1, max: 20 })
       .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/),
-    body('type').notEmpty().isIn(['Dog', 'Cat']).isLength({ max: 5 }),
-    body('gender').notEmpty().isIn(['Male', 'Female']).isLength({ max: 6 }),
+    body('type')
+    .notEmpty()
+    .withMessage('Type is required')
+    .isIn(['Dog', 'Cat']).isLength({ max: 5 }),
+    body('gender')
+    .notEmpty()
+    .withMessage('Gender is required')
+    .isIn(['Male', 'Female']).isLength({ max: 6 }),
     body('color')
-      .notEmpty()
+      .notEmpty().withMessage('Color is required')
       .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/),
     body('description').isLength({ max: 500 }),
     // Custom validation for 'picture' field
