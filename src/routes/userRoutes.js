@@ -108,17 +108,17 @@ const isAgeValid = async (value) => {
 // Validation function to check user address
 const isAddressVlidate = (value) => {
   try {
-    const { postCode, subDistrict, district, province, homeAddress } = value
-  if (!postCode) {
+    const { PostCode, TambonThaiShort, DistrictThaiShort, ProvinceThai, homeAddress } = value
+  if (!PostCode) {
     return Promise.reject('Post code is required');
   }
-  if (!subDistrict) {
-    return Promise.reject('Sub-district is required');
+  if (!TambonThaiShort) {
+    return Promise.reject('Tambbon is required');
   }
-  if (!district) {
+  if (!DistrictThaiShort) {
     return Promise.reject('District is required');
   }
-  if (!province) {
+  if (!ProvinceThai) {
     return Promise.reject('Province is required');
   }
   if (!homeAddress) {
@@ -127,7 +127,7 @@ const isAddressVlidate = (value) => {
 
   return Promise.resolve()
 } catch (error) {
-  return Promise.reject('Error checking age')
+  return Promise.reject('Error checking validate user address')
 }
 }
 
@@ -227,12 +227,11 @@ router.post(
     // body('userPicture').optional(),
 
     // Validate userAddress
-    body('userAddress').optional(),
+    body('userAddress').custom(isAddressVlidate),
     body('userAddress.homeAddress')
-      .optional()
-      .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
+      .isLength({ min: 5, max: 200 })
       .withMessage(
-      'User home address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
+      'User home address must be more than 5 and less than or equal to 200 characters'
     ),
   ],
   userController.registerUser
@@ -293,10 +292,10 @@ router.put(
     body('userAddress').optional(),
     body('userAddress.homeAddress')
       .optional()
-      .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
+      .isLength({ min: 5, max: 200 })
       .withMessage(
-      'User home address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
-    ),
+      'User home address must be more than 5 and less than or equal to 200 characters'
+      ),
   ],
 
   userController.editUserById
@@ -349,11 +348,12 @@ router.put(
       .custom(isIdCardValidate), // Using the validation function
 
     // Validate userAddress
-    body('userAddress').custom(isAddressVlidate),
+    body('userAddress').optional(),
     body('userAddress.homeAddress')
-      .matches(/^[\u0020-\u007E\u0E00-\u0E7F0-9\s]{5,200}$/)
+      .optional()
+      .isLength({ min: 5, max: 200 })
       .withMessage(
-      'User home address can contain Thai and English characters, whitespace, numbers, and special characters, with a length between 5 and 200 characters'
+      'User home address must be more than 5 and less than or equal to 200 characters'
     ),
   ],
   userController.editLoggedInUser

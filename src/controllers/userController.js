@@ -85,10 +85,10 @@ async function registerUser(req, res) {
     }
 
     const {
-      postCode,
-      subDistrict,
-      district,
-      province,
+      PostCode,
+      TambonThaiShort,
+      DistrictThaiShort,
+      ProvinceThai,
       homeAddress,
     } = userAddress
 
@@ -104,10 +104,10 @@ async function registerUser(req, res) {
       DOB: DOB,
       role: role,
       userAddress: {
-        postCode,
-        subDistrict,
-        district,
-        province,
+        PostCode,
+        TambonThaiShort,
+        DistrictThaiShort,
+        ProvinceThai,
         homeAddress,
       },
       createdOn: new Date(),
@@ -122,10 +122,10 @@ async function registerUser(req, res) {
     if (userAddress) {
       // Ensure that the required address fields are present
       if (
-        !postCode ||
-        !subDistrict ||
-        !district ||
-        !province ||
+        !PostCode ||
+        !TambonThaiShort ||
+        !DistrictThaiShort ||
+        !ProvinceThai ||
         !homeAddress
       ) {
         return res
@@ -135,10 +135,10 @@ async function registerUser(req, res) {
 
       // Add the validated address fields to the newUserFields object
       newUserFields.userAddress = {
-        postCode,
-        subDistrict,
-        district,
-        province,
+        PostCode,
+        TambonThaiShort,
+        DistrictThaiShort,
+        ProvinceThai,
         homeAddress,
       }
     }

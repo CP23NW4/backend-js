@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 
 const thailandSchema = new mongoose.Schema({
     PostCode: Number,
-    SubDistrict: String,
-    District: String,
-    Province: String
+    TambonThaiShort: String,
+    DistrictThaiShort: String,
+    ProvinceThai: String
 });
 
 const Thailand = mongoose.model('Thailand', thailandSchema, 'thailand');

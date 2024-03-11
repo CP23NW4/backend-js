@@ -418,13 +418,12 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
   try {
     // Extract the logged-in user's ID from the authentication token
     const loggedInUserId = req.user.userId
-    const userName = req.user.username
 
     // Query adoption requests collection to find requests matching the logged-in user's ID
     const adoptionRequests = await AdoptionRequest.find({ 'requester.reqId': loggedInUserId })
 
     // Return the adoption requests for the logged-in user
-    res.json({  userName, message: 'Adoption request form by requester', adoptionRequests })
+    res.json(adoptionRequests)
     console.log('Get adoption request by requester:', adoptionRequests)
     console.log('---------------------------------------------')
   } catch (error) {
@@ -433,12 +432,55 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
   }
 }
 
+// const getAdoptionRequestsByLoggedInUser = async (req, res) => {
+//   try {
+//     // Extract the logged-in user's ID from the authentication token
+//     const loggedInUserId = req.user.userId
+
+//     // Aggregate pipeline to retrieve both sender and adoption requests
+//     const result = await AdoptionRequest.aggregate([
+//       // Match adoption requests where the requester ID matches the logged-in user's ID
+//       { $match: { 'requester.reqId': loggedInUserId } },
+//       // Group by requester to get the sender
+//       {
+//         $group: {
+//           _id: '$requester',
+//           adoptionRequests: {
+//             $push: {
+//               _id: '$_id',
+//               owner: '$owner',
+//               animal: '$animal',
+//               homePicture: '$homePicture',
+//               createdOn: '$createdOn'
+//             }
+//           }
+//         }
+//       }
+//     ]);
+
+//     // Extract sender and adoption requests from the result
+//     const sender = result.map(({ _id }) => ({ sender: _id }))
+//     const adoptionRequests = result.map(({ adoptionRequests }) => adoptionRequests)
+
+//     // Return the sender and adoption requests for the logged-in user
+//     res.json({ sender, adoptionRequests })
+//     console.log('Get adoption request by requester:', adoptionRequests)
+//     console.log('---------------------------------------------')
+//   } catch (error) {
+//     console.error('Error fetching adoption requests:', error)
+//     res.status(500).json({ message: 'Error fetching adoption requests' })
+//   }
+// }
+
+
+
+
 // ----------------- GET adoption requests by owners post (Reciever) -------------------------------------------
 async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
   try {
     // Step 1: Retrieve the logged-in user data
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
-    const userName = req.user.username
+
 
     // Step 2: Query adoption requests collection based on the owner's ID (logged-in user's ID)
     const adoptionRequests = await AdoptionRequest.find({
@@ -446,7 +488,7 @@ async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
     })
 
     // Step 3: Return the adoption requests
-    res.json({ userName, message: 'Adoption requests form by owners post', adoptionRequests });
+    res.json(adoptionRequests)
     console.log('Get adoption requests by owners post:', adoptionRequests)
     console.log('---------------------------------------------')
   } catch (error) {

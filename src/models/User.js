@@ -25,12 +25,13 @@ const userSchema = new mongoose.Schema({
     default: 'general',
   },
   userAddress: {
-    postCode: Number,
-    subDistrict: String,
-    district: String,
-    province: String,
+    PostCode: Number,
+    TambonThaiShort: String,
+    DistrictThaiShort: String,
+    ProvinceThai: String,
     homeAddress: String,  // for number of house, Urban
   },
+
   createdOn: {
     type: Date,
     default: Date.now,
