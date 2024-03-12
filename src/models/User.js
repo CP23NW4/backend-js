@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
     TambonThaiShort: String,
     DistrictThaiShort: String,
     ProvinceThai: String,
-    homeAddress: String,  // for number of house, Urban
+    homeAddress: String, // for number of house, Urban
   },
 
   createdOn: {

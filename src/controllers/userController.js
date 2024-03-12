@@ -29,7 +29,6 @@ async function registerUser(req, res) {
   console.log('Request file:', req.file)
   console.log('---------------------------------------------')
   try {
-
     // Check if picture size exceeds the limit
     if (req.file && req.file.size > 3 * 1024 * 1024) {
       console.log('Image size should be less than 3 MB.')
@@ -41,121 +40,124 @@ async function registerUser(req, res) {
 
     // Call the validation function
     validate(req, res, async () => {
+      const {
+        userPicture,
+        name,
+        idCard,
+        username,
+        email,
+        password,
+        phoneNumber,
+        DOB,
+        role,
+        userAddress,
+      } = req.body
 
-    const {
-      userPicture,
-      name,
-      idCard,
-      username,
-      email,
-      password,
-      phoneNumber,
-      DOB,
-      role,
-      userAddress,
-    } = req.body
+      // Upload pic to Blob
+      const containerName = 'users'
+      let imageUrl
 
-    // Upload pic to Blob
-    const containerName = 'users'
-    let imageUrl
+      if (userPicture && isExternalUrl(userPicture)) {
+        // If the picture is an external URL, use it directly
+        imageUrl = req.body.userPicture
+      } else if (req.file) {
+        // Set the imageUrl as the Blob URL
+        imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
+      }
 
-    if (userPicture && isExternalUrl(userPicture)) {
-      // If the picture is an external URL, use it directly
-      imageUrl = req.body.userPicture
-    } else if (req.file) {
-      // Set the imageUrl as the Blob URL
-      imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
-    }
+      // Check for required fields
+      if (!name || !username || !email || !password || !phoneNumber || !DOB) {
+        console.log('Missing required fields')
+        console.log('---------------------------------------------')
+        return res.status(400).json({
+          message:
+            'Missing required fields: name, username, email, password, DOB, and phone number',
+        })
+      }
 
-    // Check for required fields
-    if (!name || !username || !email || !password || !phoneNumber || !DOB) {
-      console.log('Missing required fields')
-      console.log('---------------------------------------------')
-      return res.status(400).json({
-        message:
-          'Missing required fields: name, username, email, password, DOB, and phone number',
+      const existingUser = await User.findOne({
+        $or: [{ username }, { email }],
       })
-    }
-
-    const existingUser = await User.findOne({ $or: [{ username }, { email }] })
-    if (existingUser) {
-      console.log('Username or email already exists')
-      console.log('---------------------------------------------')
-      return res
-        .status(400)
-        .json({ message: 'Username or email already exists' })
-    }
-
-    const {
-      PostCode,
-      TambonThaiShort,
-      DistrictThaiShort,
-      ProvinceThai,
-      homeAddress,
-    } = userAddress
-
-    // Create a new user object with required fields
-    const newUserFields = new User({
-      name,
-      username,
-      email,
-      password,
-      phoneNumber,
-      userPicture,
-      idCard: idCard,
-      DOB: DOB,
-      role: role,
-      userAddress: {
-        PostCode,
-        TambonThaiShort,
-        DistrictThaiShort,
-        ProvinceThai,
-        homeAddress,
-      },
-      createdOn: new Date(),
-      updatedOn: new Date(),
-    })
-    // Conditionally include userPicture if imageUrl is defined
-    if (imageUrl) {
-      newUserFields.userPicture = imageUrl
-    }
-
-    // If userAddress is provided, validate and add it to the new user document
-    if (userAddress) {
-      // Ensure that the required address fields are present
-      if (
-        !PostCode ||
-        !TambonThaiShort ||
-        !DistrictThaiShort ||
-        !ProvinceThai ||
-        !homeAddress
-      ) {
+      if (existingUser) {
+        console.log('Username or email already exists')
+        console.log('---------------------------------------------')
         return res
           .status(400)
-          .json({ message: 'Incomplete address information' })
+          .json({ message: 'Username or email already exists' })
       }
 
-      // Add the validated address fields to the newUserFields object
-      newUserFields.userAddress = {
+      const {
         PostCode,
         TambonThaiShort,
         DistrictThaiShort,
         ProvinceThai,
         homeAddress,
+      } = userAddress
+
+      // Create a new user object with required fields
+      const newUserFields = new User({
+        name,
+        username,
+        email,
+        password,
+        phoneNumber,
+        userPicture,
+        idCard: idCard,
+        DOB: DOB,
+        role: role,
+        userAddress: {
+          PostCode,
+          TambonThaiShort,
+          DistrictThaiShort,
+          ProvinceThai,
+          homeAddress,
+        },
+        createdOn: new Date(),
+        updatedOn: new Date(),
+      })
+      // Conditionally include userPicture if imageUrl is defined
+      if (imageUrl) {
+        newUserFields.userPicture = imageUrl
       }
-    }
 
-    // Create a new user document
-    const newUser = new User(newUserFields)
-    // Save the new user document to the database
-    await newUser.save()
+      // If userAddress is provided, validate and add it to the new user document
+      if (userAddress) {
+        // Ensure that the required address fields are present
+        if (
+          !PostCode ||
+          !TambonThaiShort ||
+          !DistrictThaiShort ||
+          !ProvinceThai ||
+          !homeAddress
+        ) {
+          console.log('Incomplete address information')
+          console.log('---------------------------------------------')
+          return res
+            .status(400)
+            .json({ message: 'Incomplete address information' })
+        }
 
-    res
-      .status(201)
-      .json({ message: 'User created successfully!', user: newUser })
-    console.log('User created successfully!', newUser)
-    console.log('---------------------------------------------')
-  })
+        // Add the validated address fields to the newUserFields object
+        newUserFields.userAddress = {
+          PostCode,
+          TambonThaiShort,
+          DistrictThaiShort,
+          ProvinceThai,
+          homeAddress,
+        }
+      }
+
+      // Create a new user document
+      const newUser = new User(newUserFields)
+      // Save the new user document to the database
+      await newUser.save()
+
+      res
+        .status(201)
+        .json({ message: 'User created successfully!', user: newUser })
+      console.log('User created successfully!', newUser)
+      console.log('---------------------------------------------')
+    })
   } catch (error) {
     console.log(error)
     console.log('---------------------------------------------')
@@ -330,63 +332,62 @@ async function editUserById(req, res) {
 
     // Call the validation function
     validate(req, res, async () => {
-
-    const existingUserData = await User.findById(req.params.userId)
-    console.log('user post:', existingUserData)
-    console.log('---------------------------------------------')
-
-    const existingUserId = existingUserData._id.toString()
-
-    // Check if the authenticated user is an admin
-    if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
-      console.log('You are not authorized to edit this user')
+      const existingUserData = await User.findById(req.params.userId)
+      console.log('user post:', existingUserData)
       console.log('---------------------------------------------')
-      return res
-        .status(403)
-        .json({ message: 'You are not authorized to edit this user' })
-    }
 
-    // Find the user by userId
-    const user = await User.findById(existingUserId)
+      const existingUserId = existingUserData._id.toString()
 
-    if (!user) {
-      console.log('User not found')
+      // Check if the authenticated user is an admin
+      if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
+        console.log('You are not authorized to edit this user')
+        console.log('---------------------------------------------')
+        return res
+          .status(403)
+          .json({ message: 'You are not authorized to edit this user' })
+      }
+
+      // Find the user by userId
+      const user = await User.findById(existingUserId)
+
+      if (!user) {
+        console.log('User not found')
+        console.log('---------------------------------------------')
+        return res.status(404).json({ message: 'User not found' })
+      }
+
+      const updatedFields = {}
+      const currentDate = new Date()
+
+      if (req.body.username) {
+        updatedFields.username = req.body.username
+      }
+
+      if (req.body.phoneNumber) {
+        updatedFields.phoneNumber = req.body.phoneNumber
+      }
+      if (req.body.idCard) {
+        updatedFields.idCard = req.body.idCard
+      }
+
+      if (req.body.userAddress) {
+        updatedFields.userAddress = req.body.userAddress
+      }
+
+      // If there are fields to update, add/update the 'updatedOn' field
+      if (Object.keys(updatedFields).length > 0) {
+        updatedFields.updatedOn = currentDate
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(
+        req.params.userId,
+        { $set: updatedFields },
+        { new: true }
+      )
+
+      res.json({ message: 'Updated field:', updatedFields })
+      console.log('Updated field:', updatedFields)
       console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'User not found' })
-    }
-
-    const updatedFields = {}
-    const currentDate = new Date()
-
-    if (req.body.username) {
-      updatedFields.username = req.body.username
-    }
-
-    if (req.body.phoneNumber) {
-      updatedFields.phoneNumber = req.body.phoneNumber
-    }
-    if (req.body.idCard) {
-      updatedFields.idCard = req.body.idCard
-    }
-
-    if (req.body.userAddress) {
-      updatedFields.userAddress = req.body.userAddress
-    }
-
-    // If there are fields to update, add/update the 'updatedOn' field
-    if (Object.keys(updatedFields).length > 0) {
-      updatedFields.updatedOn = currentDate
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.userId,
-      { $set: updatedFields },
-      { new: true }
-    )
-
-    res.json({ message: 'Updated field:', updatedFields })
-    console.log('Updated field:', updatedFields)
-    console.log('---------------------------------------------')
     })
   } catch (err) {
     res.status(500).json({ message: 'Error updating user' })
@@ -401,56 +402,55 @@ async function editLoggedInUser(req, res) {
 
     const loggedInUserRole = loggedInUser.role
     const loggedInuserId = loggedInUser._id.toString()
-    
+
     // Call the validation function
     validate(req, res, async () => {
-
-    const existingUserData = await User.findById(loggedInUser)
-    const existingUserId = existingUserData._id.toString()
-    console.log('user post:', existingUserData)
-    console.log('---------------------------------------------')
-
-    // Check if the authenticated user is an admin
-    if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
-      console.log('You are not authorized to edit this user')
+      const existingUserData = await User.findById(loggedInUser)
+      const existingUserId = existingUserData._id.toString()
+      console.log('user post:', existingUserData)
       console.log('---------------------------------------------')
-      return res
-        .status(403)
-        .json({ message: 'You are not authorized to edit this user' })
-    }
 
-    const updatedFields = {}
-    const currentDate = new Date()
+      // Check if the authenticated user is an admin
+      if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
+        console.log('You are not authorized to edit this user')
+        console.log('---------------------------------------------')
+        return res
+          .status(403)
+          .json({ message: 'You are not authorized to edit this user' })
+      }
 
-    if (req.body.username) {
-      updatedFields.username = req.body.username
-    }
+      const updatedFields = {}
+      const currentDate = new Date()
 
-    if (req.body.phoneNumber) {
-      updatedFields.phoneNumber = req.body.phoneNumber
-    }
-    if (req.body.idCard) {
-      updatedFields.idCard = req.body.idCard
-    }
+      if (req.body.username) {
+        updatedFields.username = req.body.username
+      }
 
-    if (req.body.userAddress) {
-      updatedFields.userAddress = req.body.userAddress
-    }
+      if (req.body.phoneNumber) {
+        updatedFields.phoneNumber = req.body.phoneNumber
+      }
+      if (req.body.idCard) {
+        updatedFields.idCard = req.body.idCard
+      }
 
-    // If there are fields to update, add/update the 'updatedOn' field
-    if (Object.keys(updatedFields).length > 0) {
-      updatedFields.updatedOn = currentDate
-    }
+      if (req.body.userAddress) {
+        updatedFields.userAddress = req.body.userAddress
+      }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      existingUserData._id,
-      { $set: updatedFields },
-      { new: true }
-    )
+      // If there are fields to update, add/update the 'updatedOn' field
+      if (Object.keys(updatedFields).length > 0) {
+        updatedFields.updatedOn = currentDate
+      }
 
-    res.json({ message: 'Updated field:', updatedFields })
-    console.log('Updated field:', updatedFields)
-    console.log('---------------------------------------------')
+      const updatedUser = await User.findByIdAndUpdate(
+        existingUserData._id,
+        { $set: updatedFields },
+        { new: true }
+      )
+
+      res.json({ message: 'Updated field:', updatedFields })
+      console.log('Updated field:', updatedFields)
+      console.log('---------------------------------------------')
     })
   } catch (err) {
     res.status(500).json({ message: 'Error updating user' })

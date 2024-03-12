@@ -25,15 +25,18 @@ router.post(
       .isLength({ min: 1, max: 20 })
       .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/),
     body('type')
-    .notEmpty()
-    .withMessage('Type is required')
-    .isIn(['Dog', 'Cat']).isLength({ max: 5 }),
+      .notEmpty()
+      .withMessage('Type is required')
+      .isIn(['Dog', 'Cat'])
+      .isLength({ max: 5 }),
     body('gender')
-    .notEmpty()
-    .withMessage('Gender is required')
-    .isIn(['Male', 'Female']).isLength({ max: 6 }),
+      .notEmpty()
+      .withMessage('Gender is required')
+      .isIn(['Male', 'Female'])
+      .isLength({ max: 6 }),
     body('color')
-      .notEmpty().withMessage('Color is required')
+      .notEmpty()
+      .withMessage('Color is required')
       .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/),
     body('description').isLength({ max: 500 }),
     // Custom validation for 'picture' field
@@ -66,10 +69,11 @@ router.put(
       .custom((value) => !/\d/.test(value)),
     body('description').optional().isLength({ max: 500 }),
     body('status')
-    .isLength({ max: 11 }).withMessage('Status must be less than 11 characters')
-    .optional()
-    .isIn(['Available', 'Unavailable'])
-    .withMessage('Status must be Available or Unavailable'),
+      .isLength({ max: 11 })
+      .withMessage('Status must be less than 11 characters')
+      .optional()
+      .isIn(['Available', 'Unavailable'])
+      .withMessage('Status must be Available or Unavailable'),
   ],
   authenticateUser,
   strayAnimalController.updateStrayAnimal
@@ -96,13 +100,24 @@ router.post(
 )
 
 // ----------------- Get all animals by logged-in user ------------------------------
-router.get('/', authenticateUser, strayAnimalController.getAnimalPostsByLoggedInUser
+router.get(
+  '/',
+  authenticateUser,
+  strayAnimalController.getAnimalPostsByLoggedInUser
 )
 
 // ----------------- GET adoption requests by logged-in user (Requester) ------------
-router.get('/sender/reqAdoption', authenticateUser, strayAnimalController.getAdoptionRequestsByLoggedInUser)
+router.get(
+  '/sender/reqAdoption',
+  authenticateUser,
+  strayAnimalController.getAdoptionRequestsByLoggedInUser
+)
 
 // ----------------- GET adoption requests by owners (Reciever) ------------
-router.get('/reciever/reqAdoption', authenticateUser, strayAnimalController.getOwnersAdoptionRequestsByLoggedInUser)
+router.get(
+  '/reciever/reqAdoption',
+  authenticateUser,
+  strayAnimalController.getOwnersAdoptionRequestsByLoggedInUser
+)
 
 module.exports = router
