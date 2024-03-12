@@ -13,14 +13,15 @@ const azureBlobService = require('../services/azureBlobService') // Adjust the p
 const loggedInUserService = require('../services/loggedInUserService')
 
 //----------------- Validation function --------------------------------------------------
-function validate(req, res) {
+const validate = (req, res, next) => {
   const errors = validationResult(req).formatWith(({ value, msg }) => ({
-      value,
-      msg,
+    value,
+    msg,
   }))
   if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
+    return res.status(400).json({ errors: errors.array() })
   }
+  next() // Call next middleware if validation passes
 }
 
 //----------------- Register a new user ----------------------------------------------------
@@ -28,6 +29,7 @@ async function registerUser(req, res) {
   console.log('Request file:', req.file)
   console.log('---------------------------------------------')
   try {
+
     // Check if picture size exceeds the limit
     if (req.file && req.file.size > 3 * 1024 * 1024) {
       console.log('Image size should be less than 3 MB.')
@@ -38,7 +40,7 @@ async function registerUser(req, res) {
     }
 
     // Call the validation function
-    validate(req, res)
+    validate(req, res, async () => {
 
     const {
       userPicture,
@@ -153,6 +155,7 @@ async function registerUser(req, res) {
       .json({ message: 'User created successfully!', user: newUser })
     console.log('User created successfully!', newUser)
     console.log('---------------------------------------------')
+  })
   } catch (error) {
     console.log(error)
     console.log('---------------------------------------------')
@@ -325,14 +328,14 @@ async function editUserById(req, res) {
     const loggedInUserRole = loggedInUser.role
     const loggedInuserId = loggedInUser._id.toString()
 
+    // Call the validation function
+    validate(req, res, async () => {
+
     const existingUserData = await User.findById(req.params.userId)
     console.log('user post:', existingUserData)
     console.log('---------------------------------------------')
 
     const existingUserId = existingUserData._id.toString()
-
-    // Call the validation function
-    validate(req, res)
 
     // Check if the authenticated user is an admin
     if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
@@ -384,6 +387,7 @@ async function editUserById(req, res) {
     res.json({ message: 'Updated field:', updatedFields })
     console.log('Updated field:', updatedFields)
     console.log('---------------------------------------------')
+    })
   } catch (err) {
     res.status(500).json({ message: 'Error updating user' })
   }
@@ -397,14 +401,14 @@ async function editLoggedInUser(req, res) {
 
     const loggedInUserRole = loggedInUser.role
     const loggedInuserId = loggedInUser._id.toString()
+    
+    // Call the validation function
+    validate(req, res, async () => {
 
     const existingUserData = await User.findById(loggedInUser)
     const existingUserId = existingUserData._id.toString()
     console.log('user post:', existingUserData)
     console.log('---------------------------------------------')
-
-    // Call the validation function
-    validate(req, res)
 
     // Check if the authenticated user is an admin
     if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
@@ -433,7 +437,6 @@ async function editLoggedInUser(req, res) {
       updatedFields.userAddress = req.body.userAddress
     }
 
-
     // If there are fields to update, add/update the 'updatedOn' field
     if (Object.keys(updatedFields).length > 0) {
       updatedFields.updatedOn = currentDate
@@ -448,6 +451,7 @@ async function editLoggedInUser(req, res) {
     res.json({ message: 'Updated field:', updatedFields })
     console.log('Updated field:', updatedFields)
     console.log('---------------------------------------------')
+    })
   } catch (err) {
     res.status(500).json({ message: 'Error updating user' })
   }

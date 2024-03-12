@@ -65,7 +65,11 @@ router.put(
       .matches(/^[\u0E00-\u0E7F\sA-Za-z]+$/)
       .custom((value) => !/\d/.test(value)),
     body('description').optional().isLength({ max: 500 }),
-    body('status').optional().isIn(['Available', 'Unavailable']).isLength({ max: 11 })
+    body('status')
+    .isLength({ max: 11 }).withMessage('Status must be less than 11 characters')
+    .optional()
+    .isIn(['Available', 'Unavailable'])
+    .withMessage('Status must be Available or Unavailable'),
   ],
   authenticateUser,
   strayAnimalController.updateStrayAnimal

@@ -105,32 +105,6 @@ const isAgeValid = async (value) => {
   }
 }
 
-// Validation function to check user address
-const isAddressVlidate = (value) => {
-  try {
-    const { PostCode, TambonThaiShort, DistrictThaiShort, ProvinceThai, homeAddress } = value
-  if (!PostCode) {
-    return Promise.reject('Post code is required');
-  }
-  if (!TambonThaiShort) {
-    return Promise.reject('Tambbon is required');
-  }
-  if (!DistrictThaiShort) {
-    return Promise.reject('District is required');
-  }
-  if (!ProvinceThai) {
-    return Promise.reject('Province is required');
-  }
-  if (!homeAddress) {
-    return Promise.reject('Home address is required');
-  }
-
-  return Promise.resolve()
-} catch (error) {
-  return Promise.reject('Error checking validate user address')
-}
-}
-
 // ----------------- User registration ------------------------------------------
 router.post(
   '/register',
@@ -227,8 +201,25 @@ router.post(
     // body('userPicture').optional(),
 
     // Validate userAddress
-    body('userAddress').custom(isAddressVlidate),
+    body('userAddress.PostCode')
+      .notEmpty()
+      .withMessage('Post code is required'),
+
+    body('userAddress.TambonThaiShort')
+      .notEmpty()
+      .withMessage('Tam-bon is required'),
+
+    body('userAddress.DistrictThaiShort')
+      .notEmpty()
+      .withMessage('District is required'),
+
+    body('userAddress.ProvinceThai')
+      .notEmpty()
+      .withMessage('Province is required'),
+
     body('userAddress.homeAddress')
+      .notEmpty()
+      .withMessage('Home address is required')
       .isLength({ min: 5, max: 200 })
       .withMessage(
       'User home address must be more than 5 and less than or equal to 200 characters'

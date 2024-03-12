@@ -13,15 +13,17 @@ const loggedInUserService = require('../services/loggedInUserService')
 const { validationResult } = require ('express-validator')
 
 //----------------- Validation function --------------------------------------------------
-function validate(req, res) {
+const validate = (req, res, next) => {
   const errors = validationResult(req).formatWith(({ value, msg }) => ({
-      value,
-      msg,
+    value,
+    msg,
   }))
   if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
+    return res.status(400).json({ errors: errors.array() })
   }
+  next() // Call next middleware if validation passes
 }
+
 //----------------- Get all stray animals --------------------------------------------------
 const getAllStrayAnimals = async (req, res) => {
   try {
@@ -80,7 +82,7 @@ const createStrayAnimal = async (req, res) => {
     }
 
     // Call the validation function
-    validate(req, res)
+    validate(req, res, async () => {
 
     const { name, type, gender, color, description } = req.body
 
@@ -137,6 +139,7 @@ const createStrayAnimal = async (req, res) => {
       savedStrayAnimal
     )
     console.log('---------------------------------------------')
+    })
   } catch (error) {
     console.error(error)
     console.log('---------------------------------------------')
@@ -157,6 +160,9 @@ const updateStrayAnimal = async (req, res) => {
 
     const loggedInUserRole = loggedInUser.role
     const loggedInUserId = loggedInUser._id.toString()
+
+    // Call the validation function
+    validate(req, res, async () => {
 
     const existingStrayAnimal = await StrayAnimal.findById(req.params.saId)
 
@@ -181,9 +187,6 @@ const updateStrayAnimal = async (req, res) => {
         .status(403)
         .json({ message: 'You are not authorized to edit this animal' })
     }
-
-    // Call the validation function
-    validate(req, res)
 
     const updatedFields = {}
     const currentDate = new Date()
@@ -223,6 +226,7 @@ const updateStrayAnimal = async (req, res) => {
     console.log('---------------------------------------------')
     console.log('Updated animal:', updatedStrayAnimal)
     console.log('---------------------------------------------')
+    })
   } catch (err) {
     res.status(500).json({ message: 'Error updating stray animal' })
   }
@@ -283,9 +287,6 @@ const requestAdoption = async (req, res) => {
     //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
-    // Call the validation function
-    validate(req, res)
-
     // Check if picture size exceeds the limit
     if (req.file && req.file.size > 3 * 1024 * 1024) {
       console.log('Image size should be less than 3MB.')
@@ -294,6 +295,9 @@ const requestAdoption = async (req, res) => {
         .status(400)
         .json({ message: 'Image size should be less than 3MB.' })
     }
+
+    // Call the validation function
+    validate(req, res, async () => {
 
     // Retrieve stray animal data
     const dataInStrayAnimal = req.params.saId
@@ -371,6 +375,7 @@ const requestAdoption = async (req, res) => {
       adoptionRequest
     )
     console.log('---------------------------------------------')
+  })
   } catch (error) {
     console.error('Unable to submit adoption request', error)
     res.status(500).json({ message: 'Unable to submit adoption request' })
@@ -471,9 +476,6 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
 //     res.status(500).json({ message: 'Error fetching adoption requests' })
 //   }
 // }
-
-
-
 
 // ----------------- GET adoption requests by owners post (Reciever) -------------------------------------------
 async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
