@@ -353,4 +353,9 @@ router.put(
 // ----------------- Delete logged-in user data -------------------------------
 router.delete('/', authenticateUser, userController.deleteLoggedInUser)
 
+
+// ----------------- Email verification ---------------------------------------
+router.get('/verify/:token', userController.verifyUser)
+
+
 module.exports = router

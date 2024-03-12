@@ -12,6 +12,10 @@ const User = require('../models/User')
 const azureBlobService = require('../services/azureBlobService') // Adjust the path as needed
 const loggedInUserService = require('../services/loggedInUserService')
 
+// Import email verification middleware
+const emailVerification = require('../middlewares/emailVerification')
+const temporaryStorage = {} // Temporary storage for registration data
+
 //----------------- Validation function --------------------------------------------------
 const validate = (req, res, next) => {
   const errors = validationResult(req).formatWith(({ value, msg }) => ({
@@ -81,86 +85,93 @@ async function registerUser(req, res) {
       if (existingUser) {
         console.log('Username or email already exists')
         console.log('---------------------------------------------')
-        return res
-          .status(400)
-          .json({ message: 'Username or email already exists' })
-      }
+      return res
+        .status(400)
+        .json({ message: 'Username or email already exists' })
+    }
 
-      const {
+    const {
+      PostCode,
+      TambonThaiShort,
+      DistrictThaiShort,
+      ProvinceThai,
+      homeAddress,
+    } = userAddress
+
+    // Generate email verification token
+    const verificationToken = emailVerification.generateVerificationToken()
+
+    // Save registration data in temporary storage
+    temporaryStorage[verificationToken] = {
+      name,
+      username,
+      email,
+      password,
+      phoneNumber,
+      userPicture,
+      idCard: idCard,
+      DOB: DOB,
+      role: role,
+      userAddress: {
         PostCode,
         TambonThaiShort,
         DistrictThaiShort,
         ProvinceThai,
         homeAddress,
-      } = userAddress
+      },
+      homePicture: homePicture,
+      createdOn: new Date(),
+      verificationToken,
+    }
 
-      // Create a new user object with required fields
-      const newUserFields = new User({
-        name,
-        username,
-        email,
-        password,
-        phoneNumber,
-        userPicture,
-        idCard: idCard,
-        DOB: DOB,
-        role: role,
-        userAddress: {
-          PostCode,
-          TambonThaiShort,
-          DistrictThaiShort,
-          ProvinceThai,
-          homeAddress,
-        },
-        createdOn: new Date(),
-        updatedOn: new Date(),
-      })
-      // Conditionally include userPicture if imageUrl is defined
-      if (imageUrl) {
-        newUserFields.userPicture = imageUrl
+    // Conditionally include userPicture if imageUrl is defined
+    if (imageUrl) {
+      temporaryStorage[verificationToken].userPicture = imageUrl
+    }
+
+    // If userAddress is provided, validate and add it to the new user document
+    if (userAddress) {
+      // Ensure that the required address fields are present
+      if (
+        !PostCode ||
+        !TambonThaiShort ||
+        !DistrictThaiShort ||
+        !ProvinceThai ||
+        !homeAddress
+      ) {
+        console.log('Incomplete address information')
+        console.log('---------------------------------------------')
+        return res
+          .status(400)
+          .json({ message: 'Incomplete address information' })
       }
 
-      // If userAddress is provided, validate and add it to the new user document
-      if (userAddress) {
-        // Ensure that the required address fields are present
-        if (
-          !PostCode ||
-          !TambonThaiShort ||
-          !DistrictThaiShort ||
-          !ProvinceThai ||
-          !homeAddress
-        ) {
-          console.log('Incomplete address information')
-          console.log('---------------------------------------------')
-          return res
-            .status(400)
-            .json({ message: 'Incomplete address information' })
-        }
-
-        // Add the validated address fields to the newUserFields object
-        newUserFields.userAddress = {
-          PostCode,
-          TambonThaiShort,
-          DistrictThaiShort,
-          ProvinceThai,
-          homeAddress,
-        }
+      // Add the validated address fields to the newUserFields object
+      temporaryStorage[verificationToken].userAddress = {
+        PostCode,
+        TambonThaiShort,
+        DistrictThaiShort,
+        ProvinceThai,
+        omeAddress,
       }
 
-      // Create a new user document
-      const newUser = new User(newUserFields)
-      // Save the new user document to the database
-      await newUser.save()
+    // Send verification email
+    await emailVerification.sendVerificationEmail(email, verificationToken)
 
-      res
-        .status(201)
-        .json({ message: 'User created successfully!', user: newUser })
-      console.log('User created successfully!', newUser)
-      console.log('---------------------------------------------')
+    res.status(201).json({
+      message:
+        'User registration successfully! Please verify your email address.',
+      email: temporaryStorage[verificationToken].email,
     })
-  } catch (error) {
-    console.log(error)
+    console.log(
+      'User registration successfully! Please verify your email address.',
+      {
+        email: temporaryStorage[verificationToken].email,
+        token: temporaryStorage[verificationToken].verificationToken,
+      }
+    )
     console.log('---------------------------------------------')
+  } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
@@ -168,6 +179,39 @@ async function registerUser(req, res) {
 // Helper function to check if a URL is external
 function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
+}
+
+// ----------------- Verify by send email to user -----------------------------------------------
+async function verifyUser(req, res) {
+  try {
+    const { token } = req.params
+
+    const userRegistrationData = temporaryStorage[token]
+    if (!userRegistrationData) {
+      console.log('User registration data not found or already verified')
+      console.log('---------------------------------------------')
+      return res.status(404).json({
+        message: 'User registration data not found or already verified',
+      })
+    }
+
+    // Create a new user object using registration data
+    const newUser = new User(userRegistrationData)
+
+    // Save user to the database
+    await newUser.save()
+
+    // Clear temporary storage
+    delete temporaryStorage[token]
+
+    res
+      .status(200)
+      .json({ message: 'User email verified successfully!', user: newUser })
+    console.log(`User ${newUser.email} confirmed registration.`, newUser)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
 }
 
 // ----------------- Login user -----------------------------------------------------
@@ -425,18 +469,15 @@ async function editLoggedInUser(req, res) {
       if (req.body.username) {
         updatedFields.username = req.body.username
       }
-
       if (req.body.phoneNumber) {
         updatedFields.phoneNumber = req.body.phoneNumber
       }
       if (req.body.idCard) {
         updatedFields.idCard = req.body.idCard
       }
-
       if (req.body.userAddress) {
         updatedFields.userAddress = req.body.userAddress
       }
-
       // If there are fields to update, add/update the 'updatedOn' field
       if (Object.keys(updatedFields).length > 0) {
         updatedFields.updatedOn = currentDate
@@ -516,4 +557,5 @@ module.exports = {
   // getLoggedInUserData,
   editLoggedInUser,
   deleteLoggedInUser,
+  verifyUser,
 }

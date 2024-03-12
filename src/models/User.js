@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
     ProvinceThai: String,
     homeAddress: String, // for number of house, Urban
   },
-
+  verificationToken: String,
   createdOn: {
     type: Date,
     default: Date.now,
