@@ -9,6 +9,7 @@ const adoptionRequestSchema = new mongoose.Schema({
   },
   animal: {
     saId: String,
+    saName: String,
   },
   requester: {
     reqId: String,

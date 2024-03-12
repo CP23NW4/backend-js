@@ -25,7 +25,7 @@ mongoose.connect(
 // Routes
 app.use('/api/strayAnimals', strayAnimalRoutes)
 app.use('/api/users', userRoutes)
-app.use('/api/thailand', thailandRoutes) 
+app.use('/api/thailand', thailandRoutes)
 
 // Error handling middleware for authentication issues
 app.use((err, req, res, next) => {
