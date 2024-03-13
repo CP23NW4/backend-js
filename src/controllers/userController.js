@@ -85,92 +85,93 @@ async function registerUser(req, res) {
       if (existingUser) {
         console.log('Username or email already exists')
         console.log('---------------------------------------------')
-      return res
-        .status(400)
-        .json({ message: 'Username or email already exists' })
-    }
+        return res
+          .status(400)
+          .json({ message: 'Username or email already exists' })
+      }
 
-    const {
-      PostCode,
-      TambonThaiShort,
-      DistrictThaiShort,
-      ProvinceThai,
-      homeAddress,
-    } = userAddress
-
-    // Generate email verification token
-    const verificationToken = emailVerification.generateVerificationToken()
-
-    // Save registration data in temporary storage
-    temporaryStorage[verificationToken] = {
-      name,
-      username,
-      email,
-      password,
-      phoneNumber,
-      userPicture,
-      idCard: idCard,
-      DOB: DOB,
-      role: role,
-      userAddress: {
+      const {
         PostCode,
         TambonThaiShort,
         DistrictThaiShort,
         ProvinceThai,
         homeAddress,
-      },
-      homePicture: homePicture,
-      createdOn: new Date(),
-      verificationToken,
-    }
+      } = userAddress
 
-    // Conditionally include userPicture if imageUrl is defined
-    if (imageUrl) {
-      temporaryStorage[verificationToken].userPicture = imageUrl
-    }
+      // Generate email verification token
+      const verificationToken = emailVerification.generateVerificationToken()
 
-    // If userAddress is provided, validate and add it to the new user document
-    if (userAddress) {
-      // Ensure that the required address fields are present
-      if (
-        !PostCode ||
-        !TambonThaiShort ||
-        !DistrictThaiShort ||
-        !ProvinceThai ||
-        !homeAddress
-      ) {
-        console.log('Incomplete address information')
-        console.log('---------------------------------------------')
-        return res
-          .status(400)
-          .json({ message: 'Incomplete address information' })
+      // Save registration data in temporary storage
+      temporaryStorage[verificationToken] = {
+        name,
+        username,
+        email,
+        password,
+        phoneNumber,
+        userPicture,
+        idCard: idCard,
+        DOB: DOB,
+        role: role,
+        userAddress: {
+          PostCode,
+          TambonThaiShort,
+          DistrictThaiShort,
+          ProvinceThai,
+          homeAddress,
+        },
+        createdOn: new Date(),
+        verificationToken,
       }
 
-      // Add the validated address fields to the newUserFields object
-      temporaryStorage[verificationToken].userAddress = {
-        PostCode,
-        TambonThaiShort,
-        DistrictThaiShort,
-        ProvinceThai,
-        omeAddress,
+      // Conditionally include userPicture if imageUrl is defined
+      if (imageUrl) {
+        temporaryStorage[verificationToken].userPicture = imageUrl
       }
 
-    // Send verification email
-    await emailVerification.sendVerificationEmail(email, verificationToken)
+      // If userAddress is provided, validate and add it to the new user document
+      if (userAddress) {
+        // Ensure that the required address fields are present
+        if (
+          !PostCode ||
+          !TambonThaiShort ||
+          !DistrictThaiShort ||
+          !ProvinceThai ||
+          !homeAddress
+        ) {
+          console.log('Incomplete address information')
+          console.log('---------------------------------------------')
+          return res
+            .status(400)
+            .json({ message: 'Incomplete address information' })
+        }
 
-    res.status(201).json({
-      message:
-        'User registration successfully! Please verify your email address.',
-      email: temporaryStorage[verificationToken].email,
-    })
-    console.log(
-      'User registration successfully! Please verify your email address.',
-      {
+        // Add the validated address fields to the newUserFields object
+        temporaryStorage[verificationToken].userAddress = {
+          PostCode,
+          TambonThaiShort,
+          DistrictThaiShort,
+          ProvinceThai,
+          homeAddress,
+        }
+      }
+
+      // Send verification email
+      await emailVerification.sendVerificationEmail(email, verificationToken)
+
+      res.status(201).json({
+        message:
+          'User registration successfully! Please verify your email address.',
         email: temporaryStorage[verificationToken].email,
-        token: temporaryStorage[verificationToken].verificationToken,
-      }
-    )
-    console.log('---------------------------------------------')
+      })
+      console.log(
+        'User registration successfully! Please verify your email address.',
+        {
+          email: temporaryStorage[verificationToken].email,
+          token: temporaryStorage[verificationToken].verificationToken,
+        }
+      )
+      console.log('---------------------------------------------')
+    })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
