@@ -187,13 +187,62 @@ async function verifyUser(req, res) {
   try {
     const { token } = req.params
 
+    const htmlResError = `
+    <div style="text-align: center; height: 80vh; display: flex; align-items: center; justify-content: center;">
+    <div>
+    <img
+      src="https://mnwanimals.blob.core.windows.net/accessories/warning.png"
+      alt="Logo"
+      style="max-width: 100px; max-height: 100px; margin-top: 20px"
+    /><br />
+    <br />
+    <b style="font-size: 40px; margin: 0; color: black"> Sorry! </b><br /><br />
+    <div style="color: black">
+      <center>User registration data not found or already verified.</center>
+    </div>
+    <br />
+    <div style="color: black">
+      <center>Please go back to check your account.</center>
+    </div>
+    <br />
+    <div
+      style="
+        width: 200px;
+        height: 50px;
+        background-color: #e84b39;
+        border-radius: 20px;
+        line-height: 50px;
+        margin: auto;
+      "
+    >
+      <b
+        ><a
+          href="https://capstone23.sit.kmutt.ac.th/nw4/#/sign-in"
+          style="
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+          "
+        >
+          SIGN IN
+        </a></b
+      >
+    </div>
+  </div>
+  </div>
+  `
+
+  // Check if the token exists in temporaryStorage
     const userRegistrationData = temporaryStorage[token]
     if (!userRegistrationData) {
       console.log('User registration data not found or already verified')
       console.log('---------------------------------------------')
-      return res.status(404).json({
-        message: 'User registration data not found or already verified',
-      })
+      // return res.status(404).json({
+      //   message: 'User registration data not found or already verified',
+      // })
+      return res.status(200).send(htmlResError)
     }
 
     // Create a new user object using registration data
@@ -205,9 +254,54 @@ async function verifyUser(req, res) {
     // Clear temporary storage
     delete temporaryStorage[token]
 
-    res
-      .status(200)
-      .json({ message: 'User email verified successfully!', user: newUser })
+    const htmlResVerified = `
+    <div style="text-align: center; height: 80vh; display: flex; align-items: center; justify-content: center;">
+    <div>
+      <img
+        src="https://mnwanimals.blob.core.windows.net/accessories/verified.png"
+        alt="Logo"
+        style="max-width: 100px; max-height: 100px; margin-top: 20px"
+      /><br />
+      <br />
+      <b style="font-size: 40px; margin: 0; color: black"> Verified! </b
+      ><br /><br />
+      <div style="color: black">
+        <center>You have successfully verified account.</center>
+      </div>
+      <br />
+      <div style="color: black"><center>Please go back to sign in.</center></div>
+      <br />
+      <div
+        style="
+          width: 200px;
+          height: 50px;
+          background-color: #59BF40;
+          border-radius: 20px;
+          line-height: 50px;
+          margin: auto;
+        "
+      >
+        <b><a href="https://capstone23.sit.kmutt.ac.th/nw4/#/sign-in"
+          style="
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+          "
+        >
+          SIGN IN
+        </a></b>
+        <p>User: ${newUser.email}</p>
+      </div>
+    </div>     
+    </div>
+    `
+
+    // res
+    //   .status(200)
+    //   .json({ message: 'User email verified successfully!', user: newUser })
+    res.status(200).send(htmlResVerified)
     console.log(`User ${newUser.email} confirmed registration.`, newUser)
     console.log('---------------------------------------------')
   } catch (error) {
