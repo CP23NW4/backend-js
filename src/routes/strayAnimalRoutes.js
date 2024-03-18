@@ -106,7 +106,7 @@ router.get(
   strayAnimalController.getAnimalPostsByLoggedInUser
 )
 
-// ----------------- GET adoption requests by logged-in user (Requester) ------------
+// ----------------- GET adoption requests by logged-in user (Sender) ------------
 router.get(
   '/sender/reqAdoption',
   authenticateUser,
@@ -118,6 +118,14 @@ router.get(
   '/reciever/reqAdoption',
   authenticateUser,
   strayAnimalController.getOwnersAdoptionRequestsByLoggedInUser
+)
+
+
+// ----------------- GET adoption requests form (Reciever) by ID --------------------------
+router.get(
+  '/reciever/reqAdoption/:reqId',
+  authenticateUser,
+  strayAnimalController.getAdoptionRequestById
 )
 
 module.exports = router

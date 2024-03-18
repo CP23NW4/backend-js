@@ -443,6 +443,7 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
   }
 }
 
+
 // ----------------- GET adoption requests by owners post (Reciever) -------------------------------------------
 async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
   try {
@@ -464,6 +465,30 @@ async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
   }
 }
 
+// ----------------- GET adoption requests by ID --------------------------
+const getAdoptionRequestById = async (req, res) => {
+  try {
+    const adoptionRequest = await AdoptionRequest.findById(req.params.reqId);
+
+    if (!adoptionRequest) {
+      return res.status(404).json({ message: 'Adoption request not found' });
+    }
+
+    // Ensure that the requester is authorized to view this request
+    if (adoptionRequest.requester.reqId.toString() !== req.user.userId) {
+      return res.status(403).json({ 
+        message: 'You are not authorized to view this adoption request' 
+      })
+    }
+
+    res.json(adoptionRequest);
+  } catch (error) {
+    console.error('Error retrieving adoption request:', error)
+    res.status(500).json({ message: 'Error retrieving adoption request' })
+  }
+}
+
+
 module.exports = {
   validate,
   getAllStrayAnimals,
@@ -475,4 +500,6 @@ module.exports = {
   getAnimalPostsByLoggedInUser,
   getAdoptionRequestsByLoggedInUser,
   getOwnersAdoptionRequestsByLoggedInUser,
+  getAdoptionRequestById,
+
 }
