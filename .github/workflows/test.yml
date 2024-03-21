@@ -20,4 +20,4 @@ jobs:
         
     - name: SSH into Azure VM and pull new code
       run: |
-        ssh mnw@20.189.126.248 "cd /home/mnw/backend-js && git pull"
+        ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/backend-js && git pull"
