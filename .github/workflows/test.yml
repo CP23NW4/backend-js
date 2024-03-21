@@ -28,13 +28,17 @@ jobs:
 
     - name: Confirm before stopping and removing existing containers
       run: |
-        read -p "Are you sure you want to stop and remove existing containers? (y/n): " confirm
-        if [[ $confirm == [yY] ]]; then
-          ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/proxy && docker-compose down"
-        else
-          echo "Container removal aborted."
-          exit 0
-        fi
+        echo "Are you sure you want to stop and remove existing containers?"
+        echo "Proceeding will stop and remove the containers."
+        echo "Please confirm by setting the variable 'CONTINUE_REMOVAL' to 'true' in the workflow run."
+        echo "If you do not want to proceed, do not set the variable or set it to any other value."
+        exit 1
+
+    - name: Stop and remove existing containers
+      if: env.CONTINUE_REMOVAL == 'true'
+      run: |
+        ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/proxy && docker-compose down"
+
     # - name: Stop and remove existing containers
     #   run: |
     #     ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/proxy && docker-compose down"
