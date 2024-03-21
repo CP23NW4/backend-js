@@ -24,8 +24,8 @@ jobs:
 
     - name: Stop and remove existing containers
       run: |
-        ssh -o StrictHostKeyChecking=no mnwadmin@20.189.126.248 "cd /home/mnw/proxy && docker-compose down"
+        ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/proxy && docker-compose down"
 
     - name: Rebuild Docker containers
       run: |
-        ssh -o StrictHostKeyChecking=no mnwadmin@20.189.126.248 "cd /home/mnw/proxy && docker-compose up -d"
+        ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/proxy && docker-compose up -d"
