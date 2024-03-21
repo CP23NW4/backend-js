@@ -5,6 +5,7 @@ require('dotenv').config({ path: '../.env' })
 const StrayAnimal = require('../models/StrayAnimal')
 const User = require('../models/User')
 const AdoptionRequest = require('../models/AdoptionRequest')
+const Comment = require('../models/Comment')
 
 // Import services
 const azureBlobService = require('../services/azureBlobService')
@@ -488,6 +489,136 @@ const getAdoptionRequestById = async (req, res) => {
   }
 }
 
+// ----------------- Create a new comment --------------------------
+const createComment = async (req, res) => {
+  // console.log('Creating a new comment')
+  try {
+    // Call the validation function
+    validate(req, res, async () => {
+    const { saId } = req.params // Retrieve stray animal data
+    const { userId } = req.user // // Retrieve user data
+    const { text } = req.body
+
+    // Fetch stray animal data from the database
+    const strayAnimal = await StrayAnimal.findById(saId);
+    if (!strayAnimal) {
+      console.log('Stray animal not found')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'Stray animal not found' })
+    }
+
+    // Create a new comment
+    const comment = new Comment({
+      post: {
+        saId: strayAnimal._id,
+        saName: strayAnimal.name,
+      },
+      user: {
+        userId,
+        username: req.user.username, 
+      },
+      text,
+    })
+    await comment.save()
+
+    res.status(201).json(comment)
+    console.log('---------------------------------------------')
+    console.log('Comment created successfully by: ', req.user.username
+    )
+    console.log('Stray Animal Post', comment.post
+    )
+    console.log('User', comment.user)
+    console.log('---------------------------------------------')
+    console.log('Comment: ', comment.text)
+    console.log('---------------------------------------------')
+  })
+  } catch (error) {
+    console.error('Error creating comment:', error.message)
+    console.log('---------------------------------------------')
+    res.status(500).json({ message: 'Unable to create comment' })
+  }
+};
+
+// ----------------- Get comments for a post --------------------------
+const getComments = async (req, res) => {
+  // console.log('Fetching comments for a post')
+  // try {
+  //   const { saId } = req.params
+  //   const comments = await Comment.find({ saId })
+  try {
+    const { saId } = req.params
+    const comments = await Comment.find({ 'post.saId': saId })
+    if (!comments) {
+      console.log('Stray animal not founnd')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'Stray animal not found' })
+    }
+    
+    res.json(comments)
+    console.log('Comments fetched successfully', comments);
+    console.log('---------------------------------------------')
+  } catch (error) {
+    console.error('Can not get this comment :', error.message);
+    console.log('---------------------------------------------')
+    res.status(500).json({ message: 'Unable to fetch comments' });
+  }
+};
+
+// ----------------- Update comment by ID -------------------------- 
+const updateComment = async (req, res) => {
+  console.log('Updating a comment')
+  try {
+    // Call the validation function
+    validate(req, res, async () => {
+
+    const { commentId } = req.params
+    const { text } = req.body
+
+    const updatedComment = await Comment.findByIdAndUpdate(
+      commentId,
+      { $set: { text } },
+      { new: true }
+    )
+    if (!updatedComment) {
+      console.log('Stray animal not founnd')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'Stray animal not found' })
+    }
+
+    res.json(updatedComment)
+    console.log('---------------------------------------------')
+    console.log('Comment updated successfully: ', updatedComment.text)
+  })
+  } catch (error) {
+    console.error('Error updating comment:', error.message)
+    console.log('---------------------------------------------')
+    res.status(500).json({ message: 'Unable to update comment' })
+  }
+};
+
+// ----------------- Delete comment by ID --------------------------
+const deleteComment = async (req, res) => {
+  console.log('Deleting a comment')
+  try {
+    const { commentId } = req.params
+    await Comment.findByIdAndDelete(commentId)
+
+    if (!commentId) {
+      console.log('Stray animal not founnd')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'Stray animal not found' })
+    }
+
+    console.log('Comment deleted successfully')
+    res.json({ message: 'Comment deleted successfully' })
+    console.log('---------------------------------------------')
+  } catch (error) {
+    console.error('Error deleting comment:', error.message);
+    console.log('---------------------------------------------')
+    res.status(500).json({ message: 'Unable to delete comment' })
+  }
+};
+
 
 module.exports = {
   validate,
@@ -501,5 +632,9 @@ module.exports = {
   getAdoptionRequestsByLoggedInUser,
   getOwnersAdoptionRequestsByLoggedInUser,
   getAdoptionRequestById,
+  createComment,
+  getComments,
+  updateComment,
+  deleteComment,
 
 }

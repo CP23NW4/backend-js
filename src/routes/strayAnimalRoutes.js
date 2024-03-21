@@ -8,13 +8,13 @@ const upload = multer()
 const strayAnimalController = require('../controllers/strayAnimalController')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
-// ----------------- Get all animals ----------------------------------------------
+// ----------------- Get all stray animals ----------------------------------------------
 router.get('/all', strayAnimalController.getAllStrayAnimals)
 
-// ----------------- Get animal by ID ---------------------------------------------
+// ----------------- Get stray animal by ID ---------------------------------------------
 router.get('/:saId', strayAnimalController.getStrayAnimalById)
 
-// ----------------- Create animal ------------------------------------------------
+// ----------------- Create stray animal post ------------------------------------------------
 router.post(
   '/',
   upload.single('picture'),
@@ -86,7 +86,7 @@ router.delete(
   strayAnimalController.deleteStrayAnimal
 )
 
-// ----------------- Route for posting adoption requests by ID ---------------------
+// ----------------- Create adoption requests by ID ---------------------
 router.post(
   '/:saId/reqAdoption',
   // upload.none(),
@@ -127,5 +127,41 @@ router.get(
   authenticateUser,
   strayAnimalController.getAdoptionRequestById
 )
+
+// ----------------- Create comments  --------------------------
+router.post(
+  '/:saId/comment',
+  body('text')
+  .notEmpty()
+  .isLength({ max: 200 })
+  .withMessage('Comment must be less than 200 characters'),
+  authenticateUser,
+  strayAnimalController.createComment
+)
+
+// ----------------- GET comments by ID --------------------------
+router.get(
+  '/:saId/comments',
+  strayAnimalController.getComments
+)
+
+// ----------------- Edit comment by ID -------------------------- 
+router.put(
+  '/:saId/comment/:commentId',
+  body('text')
+  .optional()
+  .isLength({ max: 200 })
+  .withMessage('Comment must be less than 200 characters'),
+  authenticateUser,
+  strayAnimalController.updateComment
+)
+
+// ----------------- Delete comment by ID --------------------------
+router.delete(
+  '/:saId/comment/:commentId',
+  authenticateUser,
+  strayAnimalController.deleteComment
+)
+
 
 module.exports = router
