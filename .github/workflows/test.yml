@@ -26,9 +26,32 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "docker ps -a"
 
-    - name: Stop and remove existing containers
-      run: |
-        ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/proxy && docker-compose down"
+    - name: Manual approval to stop and remove existing containers
+      if: github.event_name == 'push' # Only run on push events
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_COLOR: '#1589F0' # Blue
+        SLACK_TITLE: 'Deployment Approval Required'
+        SLACK_TEXT: 'A deployment has been triggered. Please review and approve.'
+        SLACK_USERNAME: 'GitHub Actions'
+        SLACK_CHANNEL: 'deployment-notifications'
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }} # Your Slack webhook URL
+      with:
+        status: 'neutral'
+
+    - name: Wait for manual approval
+      if: github.event_name == 'push' # Only run on push events
+      uses: actions/github-script@v5
+      with:
+        script: |
+          const resp = await github.actions.createApprovalRequest({
+            pull_request_number: context.issue.number,
+            repository: context.repo,
+          });
+
+    # - name: Stop and remove existing containers
+    #   run: |
+    #     ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/proxy && docker-compose down"
 
     - name: Rebuild Docker containers
       run: |
