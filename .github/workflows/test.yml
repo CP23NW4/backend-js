@@ -1,0 +1,23 @@
+name: Deploy to Azure VM
+
+on:
+  push:
+    branches:
+      - test-cicd
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Install SSH key
+      uses: webfactory/ssh-agent@v0.5.4
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+    - name: SSH into Azure VM and pull new code
+      run: |
+        ssh mnw@20.189.126.248 "cd /home/mnw/backend-js && git pull"
