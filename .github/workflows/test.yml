@@ -22,6 +22,10 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/backend-js && git pull"
 
+    - name: Show Docker container status
+      run: |
+        ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "docker ps -a"
+
     - name: Stop and remove existing containers
       run: |
         ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/proxy && docker-compose down"
@@ -29,3 +33,7 @@ jobs:
     - name: Rebuild Docker containers
       run: |
         ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "cd /home/mnw/proxy && docker-compose up -d"
+
+    - name: Show Docker container status
+      run: |
+        ssh -o StrictHostKeyChecking=no mnw@20.189.126.248 "docker ps -a"
