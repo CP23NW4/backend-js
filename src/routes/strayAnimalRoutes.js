@@ -120,7 +120,6 @@ router.get(
   strayAnimalController.getOwnersAdoptionRequestsByLoggedInUser
 )
 
-
 // ----------------- GET adoption requests form (Reciever) by ID --------------------------
 router.get(
   '/reciever/reqAdoption/:reqId',
@@ -128,10 +127,18 @@ router.get(
   strayAnimalController.getAdoptionRequestById
 )
 
+// ----------------- Get adoption request by ID and matching stray animal ID -----------------
+router.get(
+  '/reciever/reqAdoption/:saId/:reqId',
+  authenticateUser,
+  strayAnimalController.getAdoptionRequestByIdAndsaId
+)
+
+// '/reciever/reqAdoption/:saId/:reqId'
 // ----------------- Create comments  --------------------------
 router.post(
   '/:saId/comment',
-  body('text')
+  body('comment')
   .notEmpty()
   .isLength({ max: 200 })
   .withMessage('Comment must be less than 200 characters'),
@@ -146,15 +153,15 @@ router.get(
 )
 
 // ----------------- Edit comment by ID -------------------------- 
-router.put(
-  '/:saId/comment/:commentId',
-  body('text')
-  .optional()
-  .isLength({ max: 200 })
-  .withMessage('Comment must be less than 200 characters'),
-  authenticateUser,
-  strayAnimalController.updateComment
-)
+// router.put(
+//   '/:saId/comment/:commentId',
+//   body('text')
+//   .optional()
+//   .isLength({ max: 200 })
+//   .withMessage('Comment must be less than 200 characters'),
+//   authenticateUser,
+//   strayAnimalController.updateComment
+// )
 
 // ----------------- Delete comment by ID --------------------------
 router.delete(

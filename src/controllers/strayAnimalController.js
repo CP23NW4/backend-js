@@ -19,6 +19,9 @@ const validate = (req, res, next) => {
     value,
     msg,
   }))
+  console.log('---------------------------------------------')
+  console.log('errors:', errors.array())
+  console.log('---------------------------------------------')
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() })
   }
@@ -482,12 +485,53 @@ const getAdoptionRequestById = async (req, res) => {
       })
     }
 
-    res.json(adoptionRequest);
+    res.json(adoptionRequest)
+    console.log('Get adoption requests by owners post:', adoptionRequest)
+    console.log('---------------------------------------------')
   } catch (error) {
     console.error('Error retrieving adoption request:', error)
     res.status(500).json({ message: 'Error retrieving adoption request' })
   }
 }
+
+// ----------------- Get adoption request by ID and matching stray animal ID -----------------
+const getAdoptionRequestByIdAndsaId = async (req, res) => {
+  try {
+    const saId = req.params.saId
+    const reqId = req.params.reqId
+
+    // Check if the provided IDs are valid MongoDB ObjectIDs
+    if (!mongoose.Types.ObjectId.isValid(saId) || !mongoose.Types.ObjectId.isValid(reqId)) {
+      return res.status(400).json({ message: 'Invalid ID format' })
+    }
+
+    // Query the AdoptionRequest collection to find the request matching the provided IDs
+    const adoptionRequest = await AdoptionRequest.findOne({
+      '_id': reqId,
+      'animal.saId': saId
+    })
+
+    if (!adoptionRequest) {
+      return res.status(404).json({ 
+        message: 'Adoption request not found or does not match the stray animal post ID' 
+      })
+    }
+    // Ensure that the requester is authorized to view this request
+    if (adoptionRequest.requester.reqId.toString() !== req.user.userId) {
+      return res.status(403).json({ 
+        message: 'You are not authorized to view this adoption request' 
+      })
+    }
+    // Return the adoption request
+    res.json(adoptionRequest)
+    console.log('Adoption request found:', adoptionRequest)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    console.error('Error fetching adoption request:', error)
+    res.status(500).json({ message: 'Error fetching adoption request' })
+  }
+}
+
 
 // ----------------- Create a new comment --------------------------
 const createComment = async (req, res) => {
@@ -497,7 +541,7 @@ const createComment = async (req, res) => {
     validate(req, res, async () => {
     const { saId } = req.params // Retrieve stray animal data
     const { userId } = req.user // // Retrieve user data
-    const { text } = req.body
+    const { comment } = req.body
 
     // Fetch stray animal data from the database
     const strayAnimal = await StrayAnimal.findById(saId);
@@ -508,7 +552,7 @@ const createComment = async (req, res) => {
     }
 
     // Create a new comment
-    const comment = new Comment({
+    const addComment = new Comment({
       post: {
         saId: strayAnimal._id,
         saName: strayAnimal.name,
@@ -516,20 +560,21 @@ const createComment = async (req, res) => {
       user: {
         userId,
         username: req.user.username, 
+        userPicture: req.user.userPicture,
       },
-      text,
+      comment,
     })
-    await comment.save()
+    await addComment.save()
 
-    res.status(201).json(comment)
+    res.status(201).json(addComment)
     console.log('---------------------------------------------')
     console.log('Comment created successfully by: ', req.user.username
     )
-    console.log('Stray Animal Post', comment.post
+    console.log('Stray Animal Post', addComment.post
     )
-    console.log('User', comment.user)
+    console.log('User', addComment.user)
     console.log('---------------------------------------------')
-    console.log('Comment: ', comment.text)
+    console.log('Comment: ', addComment.text)
     console.log('---------------------------------------------')
   })
   } catch (error) {
@@ -558,43 +603,43 @@ const getComments = async (req, res) => {
     console.log('Comments fetched successfully', comments);
     console.log('---------------------------------------------')
   } catch (error) {
-    console.error('Can not get this comment :', error.message);
+    console.error('Can not get this comment :', error.message)
     console.log('---------------------------------------------')
-    res.status(500).json({ message: 'Unable to fetch comments' });
+    res.status(500).json({ message: 'Unable to fetch comments' })
   }
 };
 
 // ----------------- Update comment by ID -------------------------- 
-const updateComment = async (req, res) => {
-  console.log('Updating a comment')
-  try {
-    // Call the validation function
-    validate(req, res, async () => {
+// const updateComment = async (req, res) => {
+//   console.log('Updating a comment')
+//   try {
+//     // Call the validation function
+//     validate(req, res, async () => {
 
-    const { commentId } = req.params
-    const { text } = req.body
+//     const { commentId } = req.params
+//     const { text } = req.body
 
-    const updatedComment = await Comment.findByIdAndUpdate(
-      commentId,
-      { $set: { text } },
-      { new: true }
-    )
-    if (!updatedComment) {
-      console.log('Stray animal not founnd')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'Stray animal not found' })
-    }
+//     const updatedComment = await Comment.findByIdAndUpdate(
+//       commentId,
+//       { $set: { text } },
+//       { new: true }
+//     )
+//     if (!updatedComment) {
+//       console.log('Stray animal not founnd')
+//       console.log('---------------------------------------------')
+//       return res.status(404).json({ message: 'Stray animal not found' })
+//     }
 
-    res.json(updatedComment)
-    console.log('---------------------------------------------')
-    console.log('Comment updated successfully: ', updatedComment.text)
-  })
-  } catch (error) {
-    console.error('Error updating comment:', error.message)
-    console.log('---------------------------------------------')
-    res.status(500).json({ message: 'Unable to update comment' })
-  }
-};
+//     res.json(updatedComment)
+//     console.log('---------------------------------------------')
+//     console.log('Comment updated successfully: ', updatedComment.text)
+//   })
+//   } catch (error) {
+//     console.error('Error updating comment:', error.message)
+//     console.log('---------------------------------------------')
+//     res.status(500).json({ message: 'Unable to update comment' })
+//   }
+// }
 
 // ----------------- Delete comment by ID --------------------------
 const deleteComment = async (req, res) => {
@@ -617,7 +662,7 @@ const deleteComment = async (req, res) => {
     console.log('---------------------------------------------')
     res.status(500).json({ message: 'Unable to delete comment' })
   }
-};
+}
 
 
 module.exports = {
@@ -632,9 +677,10 @@ module.exports = {
   getAdoptionRequestsByLoggedInUser,
   getOwnersAdoptionRequestsByLoggedInUser,
   getAdoptionRequestById,
+  getAdoptionRequestByIdAndsaId,
   createComment,
   getComments,
-  updateComment,
+  // updateComment,
   deleteComment,
 
 }

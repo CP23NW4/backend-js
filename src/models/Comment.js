@@ -9,8 +9,9 @@ const commentSchema = new mongoose.Schema({
   user: {
     userId: String,
     username: String,
+    userPicture: String,
   },
-  text: String,
+  comment: String,
   createdOn: {
     type: Date,
     default: Date.now,
