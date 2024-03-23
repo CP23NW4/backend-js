@@ -469,13 +469,45 @@ async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
   }
 }
 
+// ----------------- Get adoption requests filter by ID stray animal post ------------------------------
+const getAdoptionRequestsBysaId = async (req, res) => {
+  try {
+    // Retrieve the owner's post ID from the request parameters
+    const saId = req.params.saId
+
+    // Retrieve the logged-in user data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+    // Query adoption requests collection based on the owner's post ID
+    const adoptionRequests = await AdoptionRequest.find({
+      'animal.saId': saId,
+    })
+
+    // Check if the logged-in user is the owner of the post
+    const isOwner = adoptionRequests.some(request => request.owner.ownerId.toString() === loggedInUser._id.toString())
+    if (!isOwner) {
+      return res.status(403).json({ 
+        message: 'You are not authorized to view adoption requests for this post' 
+      })
+    }
+
+    // Return the adoption requests for the specified stray animal post
+    res.json(adoptionRequests)
+    console.log('Get adoption requests for stray animal post:', adoptionRequests)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    console.error('Error retrieving adoption requests for stray animal post:', error)
+    res.status(500).json({ message: 'Error retrieving adoption requests' })
+  }
+}
+
 // ----------------- GET adoption requests by ID --------------------------
 const getAdoptionRequestById = async (req, res) => {
   try {
-    const adoptionRequest = await AdoptionRequest.findById(req.params.reqId);
+    const adoptionRequest = await AdoptionRequest.findById(req.params.reqId)
 
     if (!adoptionRequest) {
-      return res.status(404).json({ message: 'Adoption request not found' });
+      return res.status(404).json({ message: 'Adoption request not found' })
     }
 
     // Ensure that the requester is authorized to view this request
@@ -493,45 +525,6 @@ const getAdoptionRequestById = async (req, res) => {
     res.status(500).json({ message: 'Error retrieving adoption request' })
   }
 }
-
-// ----------------- Get adoption request by ID and matching stray animal ID -----------------
-const getAdoptionRequestByIdAndsaId = async (req, res) => {
-  try {
-    const saId = req.params.saId
-    const reqId = req.params.reqId
-
-    // Check if the provided IDs are valid MongoDB ObjectIDs
-    if (!mongoose.Types.ObjectId.isValid(saId) || !mongoose.Types.ObjectId.isValid(reqId)) {
-      return res.status(400).json({ message: 'Invalid ID format' })
-    }
-
-    // Query the AdoptionRequest collection to find the request matching the provided IDs
-    const adoptionRequest = await AdoptionRequest.findOne({
-      '_id': reqId,
-      'animal.saId': saId
-    })
-
-    if (!adoptionRequest) {
-      return res.status(404).json({ 
-        message: 'Adoption request not found or does not match the stray animal post ID' 
-      })
-    }
-    // Ensure that the requester is authorized to view this request
-    if (adoptionRequest.requester.reqId.toString() !== req.user.userId) {
-      return res.status(403).json({ 
-        message: 'You are not authorized to view this adoption request' 
-      })
-    }
-    // Return the adoption request
-    res.json(adoptionRequest)
-    console.log('Adoption request found:', adoptionRequest)
-    console.log('---------------------------------------------')
-  } catch (error) {
-    console.error('Error fetching adoption request:', error)
-    res.status(500).json({ message: 'Error fetching adoption request' })
-  }
-}
-
 
 // ----------------- Create a new comment --------------------------
 const createComment = async (req, res) => {
@@ -677,7 +670,7 @@ module.exports = {
   getAdoptionRequestsByLoggedInUser,
   getOwnersAdoptionRequestsByLoggedInUser,
   getAdoptionRequestById,
-  getAdoptionRequestByIdAndsaId,
+  getAdoptionRequestsBysaId,
   createComment,
   getComments,
   // updateComment,

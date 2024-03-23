@@ -120,6 +120,13 @@ router.get(
   strayAnimalController.getOwnersAdoptionRequestsByLoggedInUser
 )
 
+// ----------------- Get adoption requests filter by ID stray animal post ---------------------
+router.get(
+  '/reciever/:saId/reqAdoption',
+  authenticateUser,
+  strayAnimalController.getAdoptionRequestsBysaId
+)
+
 // ----------------- GET adoption requests form (Reciever) by ID --------------------------
 router.get(
   '/reciever/reqAdoption/:reqId',
@@ -127,14 +134,6 @@ router.get(
   strayAnimalController.getAdoptionRequestById
 )
 
-// ----------------- Get adoption request by ID and matching stray animal ID -----------------
-router.get(
-  '/reciever/reqAdoption/:saId/:reqId',
-  authenticateUser,
-  strayAnimalController.getAdoptionRequestByIdAndsaId
-)
-
-// '/reciever/reqAdoption/:saId/:reqId'
 // ----------------- Create comments  --------------------------
 router.post(
   '/:saId/comment',
