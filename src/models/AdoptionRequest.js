@@ -10,6 +10,12 @@ const adoptionRequestSchema = new mongoose.Schema({
   animal: {
     saId: String,
     saName: String,
+    saPicture: String,
+    saType: String,
+    saGender: String,
+    saColor: String,
+    saDesc: String,
+    saStatus: String,
   },
   requester: {
     reqId: String,

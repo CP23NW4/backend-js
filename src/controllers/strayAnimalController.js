@@ -346,6 +346,12 @@ const requestAdoption = async (req, res) => {
         animal: {
           saId: dataInSaId._id,
           saName: dataInSaId.name,
+          saPicture: dataInSaId.picture,
+          saType: dataInSaId.type,
+          saGender: dataInSaId.gender,
+          saColor: dataInSaId.color,
+          saDesc: dataInSaId.description,
+          saStatus: dataInSaId.status,
         },
         requester: {
           reqId: loggedInUser._id,
@@ -446,7 +452,6 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
     res.status(500).json({ message: 'Error fetching adoption requests' })
   }
 }
-
 
 // ----------------- GET adoption requests by owners post (Reciever) -------------------------------------------
 async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
@@ -600,7 +605,7 @@ const getComments = async (req, res) => {
     console.log('---------------------------------------------')
     res.status(500).json({ message: 'Unable to fetch comments' })
   }
-};
+}
 
 // ----------------- Update comment by ID -------------------------- 
 // const updateComment = async (req, res) => {
