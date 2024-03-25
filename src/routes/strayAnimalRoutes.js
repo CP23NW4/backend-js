@@ -99,6 +99,19 @@ router.post(
   strayAnimalController.requestAdoption
 )
 
+// ----------------- Edit status adoption request by ID -------------------------------------
+router.put(
+  '/:saId/reqAdoption/:reqId',
+  upload.none(),
+  body('status')
+  .isLength({ max: 10 })
+  .withMessage('Status must be less than 10 characters')
+  .optional()
+  .isIn(['On Request', 'Accepted'])
+  .withMessage('Status must be On Request or Accepted'), 
+  authenticateUser, 
+  strayAnimalController.updateAdoptionRequestStatus)
+
 // ----------------- Get all animals by logged-in user ------------------------------
 router.get(
   '/',

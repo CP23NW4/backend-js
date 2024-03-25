@@ -400,6 +400,64 @@ function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
 }
 
+// ----------------- Edit status adoption request for a stray animal by ID -------------------------------------------
+const updateAdoptionRequestStatus = async (req, res) => {
+  try {
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+    const loggedInUserRole = loggedInUser.role
+    const loggedInUserId = loggedInUser._id.toString()
+
+    // Call the validation function to ensure owner/admin authorization
+    validate(req, res, async () => {
+      // Retrieve the existing adoption request
+      const existingAdoptionRequest = await AdoptionRequest.findById(req.params.reqId)
+
+      if (!existingAdoptionRequest) {
+        console.log('Adoption request not found');
+        console.log('---------------------------------------------')
+        return res.status(404).json({ message: 'Adoption request not found' })
+      }
+
+      // Check if the authenticated user is the owner of the stray animal or an admin
+      const ownerId = existingAdoptionRequest.requester.reqId.toString()
+      if (loggedInUserRole !== 'admin' && ownerId !== loggedInUserId) {
+        console.log('You are not authorized to edit this adoption request')
+        console.log('---------------------------------------------')
+        return res.status(403).json({ message: 'You are not authorized to edit this adoption request' })
+      }
+
+      // Validate and update the adoption request status
+      const { status } = req.body
+      if (!status || (status !== 'On Request' && status !== 'Accepted')) {
+        console.log('Invalid status provided')
+        console.log('---------------------------------------------')
+        return res.status(400).json({ message: 'Invalid status provided' })
+      }
+
+      existingAdoptionRequest.status = status
+      existingAdoptionRequest.updatedOn = new Date()
+      await existingAdoptionRequest.save()
+
+      // Respond with only required fields
+      const updateStatus = {
+        status: existingAdoptionRequest.status,
+        _id: existingAdoptionRequest._id,
+        updatedOn: existingAdoptionRequest.updatedOn
+      }
+
+      res.json({ message: 'Updated adoption request status:', updateStatus })
+      console.log('Updated adoption request status:', updateStatus )
+      console.log('---------------------------------------------')
+      console.log('Updated adoption request status successfully:', existingAdoptionRequest )
+    })
+  } catch (error) {
+    console.error('Error updating adoption request:', error)
+    res.status(500).json({ message: 'Error updating adoption request' })
+  }
+}
+
 // ----------------- GET animal post by Owner -------------------------------------------
 async function getAnimalPostsByOwner(ownerId) {
   try {
@@ -671,6 +729,7 @@ module.exports = {
   updateStrayAnimal,
   deleteStrayAnimal,
   requestAdoption,
+  updateAdoptionRequestStatus,
   getAnimalPostsByLoggedInUser,
   getAdoptionRequestsByLoggedInUser,
   getOwnersAdoptionRequestsByLoggedInUser,

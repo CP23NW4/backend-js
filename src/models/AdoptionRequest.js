@@ -30,7 +30,16 @@ const adoptionRequestSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  status: {
+    type: String,
+    enum: ['On Request', 'Accepted'],
+    default: 'On Request',
+  },
   createdOn: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedOn: {
     type: Date,
     default: Date.now,
   },
