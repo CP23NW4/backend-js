@@ -22,6 +22,9 @@ const validate = (req, res, next) => {
     value,
     msg,
   }))
+  console.log('---------------------------------------------')
+  console.log('errors:', errors.array())
+  console.log('---------------------------------------------')
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() })
   }
@@ -160,11 +163,11 @@ async function registerUser(req, res) {
 
       res.status(201).json({
         message:
-          'User registration successfully! Please verify your email address.',
+          'User registration successfully! Please verify your email address in 30 minutes.',
         email: temporaryStorage[verificationToken].email,
       })
       console.log(
-        'User registration successfully! Please verify your email address.',
+        'User registration successfully! Please verify your email address in 30 minutes.',
         {
           email: temporaryStorage[verificationToken].email,
           token: temporaryStorage[verificationToken].verificationToken,
@@ -234,9 +237,9 @@ async function verifyUser(req, res) {
   </div>
   `
 
-  // Check if the token exists in temporaryStorage
+  // Check if the token exists in temporaryStorage and if it's within 30 minutes
     const userRegistrationData = temporaryStorage[token]
-    if (!userRegistrationData) {
+    if (!userRegistrationData || (Date.now() - userRegistrationData.createdOn.getTime()) > 30 * 60 * 1000) {
       console.log('User registration data not found or already verified')
       console.log('---------------------------------------------')
       // return res.status(404).json({
