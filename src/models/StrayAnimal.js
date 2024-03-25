@@ -20,6 +20,7 @@ const strayAnimalSchema = new mongoose.Schema({
   owner: {
     ownerId: String,
     ownerUsername: String,
+    ownerPicture: String,
     phoneNumber: String,
     role: String,
     ownerAddress: {

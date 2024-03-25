@@ -5,6 +5,7 @@ const adoptionRequestSchema = new mongoose.Schema({
   owner: {
     ownerId: String,
     ownerUsername: String,
+    ownerPicture: String,
     phoneNumber: String,
   },
   animal: {
@@ -35,14 +36,8 @@ const adoptionRequestSchema = new mongoose.Schema({
     enum: ['On Request', 'Accepted'],
     default: 'On Request',
   },
-  createdOn: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedOn: {
-    type: Date,
-    default: Date.now,
-  },
+  createdOn: Date,
+  updatedOn: Date,
 })
 
 const AdoptionRequest = mongoose.model('AdoptionRequest', adoptionRequestSchema)

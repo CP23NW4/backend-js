@@ -125,6 +125,7 @@ const createStrayAnimal = async (req, res) => {
         owner: {
           ownerId: loggedInUser._id,
           ownerUsername: loggedInUser.username,
+          ownerPicture: loggedInUser.userPicture,
           phoneNumber: loggedInUser.phoneNumber,
           role: loggedInUser.role,
           ownerAddress: loggedInUser.userAddress,
@@ -341,6 +342,7 @@ const requestAdoption = async (req, res) => {
         owner: {
           ownerId: dataInSaId.owner.ownerId,
           ownerUsername: dataInSaId.owner.ownerUsername,
+          ownerPicture: dataInSaId.owner.ownerPicture,
           phoneNumber: dataInSaId.owner.phoneNumber,
         },
         animal: {
@@ -415,7 +417,7 @@ const updateAdoptionRequestStatus = async (req, res) => {
       const existingAdoptionRequest = await AdoptionRequest.findById(req.params.reqId)
 
       if (!existingAdoptionRequest) {
-        console.log('Adoption request not found');
+        console.log('Adoption request not found')
         console.log('---------------------------------------------')
         return res.status(404).json({ message: 'Adoption request not found' })
       }
