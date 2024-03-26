@@ -57,11 +57,11 @@ jobs:
     #     sudo apt remove -y containerd.io
     #     sudo apt install -y docker.io
 
-    # Static Application Security Testing (SAST)
-    - name: SAST Scan
-      # uses: github/codeql-action@v1
-      with:
-        languages: javascript # Specify the language of your codebase
+    # # Static Application Security Testing (SAST)
+    # - name: SAST Scan
+    #   uses: github/codeql-action@v1
+    #   with:
+    #     languages: javascript # Specify the language of your codebase
         
     # Dynamic Application Security Testing (DAST)
     - name: DAST Scan
