@@ -70,7 +70,7 @@ jobs:
     # Scan Docker image with Trivy
     - name: Trivy Scan
       run: |
-        trivy --quiet --exit-code 0 --severity HIGH,CRITICAL backend-image
+        trivy --quiet --severity HIGH,CRITICAL backend-image
 
     # Install OWASP ZAP scan
     - name: Install OWASP ZAP
