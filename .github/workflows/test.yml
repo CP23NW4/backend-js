@@ -3,7 +3,7 @@ name: CI/CD for backend
 on:
   push:
     branches:
-      - test-cicd-vm2
+      - test-cicd-vm2-with-sec
 
 jobs:
   deploy:
@@ -37,15 +37,48 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker ps -a"
 
-    - name: Stop and remove existing containers
-      run: |
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/proxy && docker-compose stop backend-container"
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/proxy && docker-compose rm -f backend-container"
+    # - name: Stop and remove existing containers
+    #   run: |
+    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/proxy && docker-compose stop backend-container"
+    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/proxy && docker-compose rm -f backend-container"
 
-    - name: Rebuild Docker containers
-      run: |
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/proxy && docker-compose up -d --build backend-container"
+    # - name: Rebuild Docker containers
+    #   run: |
+    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/proxy && docker-compose up -d --build backend-container"
 
-    - name: Show Docker container status
+    # - name: Show Docker container status
+    #   run: |
+    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker ps -a"
+
+    # Install Docker
+    - name: Install Docker
       run: |
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker ps -a"
+        sudo apt update
+        sudo apt install -y docker.io
+
+
+    # Pull Clair Docker image
+    - name: Pull Clair Docker image
+      run: |
+        docker pull quay.io/coreos/clair:v4
+
+    # Run Clair container
+    - name: Run Clair Container
+      run: |
+        docker run -d --name clair --network host quay.io/coreos/clair:v4
+
+    # Run Clair scan on Docker image
+    - name: Clair Scan
+      run: |
+        docker run --network host --rm quay.io/coreos/clair:v4 clair-scanner backend-image
+
+    # Install OWASP ZAP
+    - name: Install OWASP ZAP
+      run: |
+        sudo apt update
+        sudo apt install -y owasp-zap
+
+    # Run OWASP ZAP scan
+    - name: OWASP ZAP Scan
+      run: |
+        zap-baseline.py -t https://capstone23.sit.kmutt.ac.th/nw4/ -r report.html
