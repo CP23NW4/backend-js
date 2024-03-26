@@ -50,42 +50,35 @@ jobs:
     #   run: |
     #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker ps -a"
 
-    # Install Docker
-    - name: Install Docker
-      run: |
-        sudo apt update
-        sudo apt remove -y containerd.io
-        sudo apt install -y docker.io
-
-    # # Install Trivy
-    # - name: Install Trivy
+    # # Install Docker
+    # - name: Install Docker
     #   run: |
     #     sudo apt update
-    #     sudo apt install -y wget apt-transport-https gnupg lsb-release
-    #     wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-    #     echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-    #     sudo apt update
-    #     sudo apt install -y trivy
+    #     sudo apt remove -y containerd.io
+    #     sudo apt install -y docker.io
 
-    # - name: Show Docker images
-    #   run: |
-    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker image ls"
-
-    # - name: Find backend-image.tar in VM
-    #   run: |
-    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "sudo find / -name backend-image.tar"
-
-    # # Scan Docker image with Trivy
-    # - name: Trivy Scan
-    #   run: |
-    #     trivy image --quiet --input /home/sysadmin/backend-image.tar
-
-    # Install OWASP ZAP
-    - name: Install OWASP ZAP
+# Static Application Security Testing (SAST)
+    - name: SAST Scan
+      uses: github/codeql-action@v1
+      with:
+        languages: javascript # Specify the language of your codebase
+        
+    # Dynamic Application Security Testing (DAST)
+    - name: DAST Scan
       run: |
-        sudo snap install zaproxy --classic
+        # Run OWASP ZAP against your application
+        # Adjust the target URL and other configurations as needed
+        docker run --network="host" -t owasp/zap2docker-stable zap-full-scan.py -t https://capstone23.sit.kmutt.ac.th/nw4/#/
 
-    # Run OWASP ZAP scan
-    - name: OWASP ZAP Scan
+# Container Scanning
+    - name: Container Security Scan
       run: |
-         /snap/bin/zaproxy/zap-baseline.py -t https://capstone23.sit.kmutt.ac.th/nw4/ -r report.html
+        # Run Trivy to scan Docker images for vulnerabilities
+        # Adjust the Docker image name and tag as needed
+        trivy image backend-image:latest
+        
+# Dependency Scanning
+    - name: Dependency Security Scan
+      run: |
+        # Run npm audit to scan project dependencies for vulnerabilities
+        npm audit --json > npm_audit_results.json
