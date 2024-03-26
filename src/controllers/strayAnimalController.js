@@ -511,6 +511,19 @@ const updateAdoptionRequestStatus = async (req, res) => {
   }
 }
 
+// ----------------- GET animal post by Owner -------------------------------------------
+async function getAnimalPostsByOwner(ownerId) {
+  try {
+    // Query stray animals collection based on owner's ID
+    const animalPosts = await StrayAnimal.find({ 'owner.ownerId': ownerId })
+    return animalPosts
+  } catch (error) {
+    console.log(error)
+    console.log('---------------------------------------------')
+    throw error
+  }
+}
+
 // ----------------- GET animal post by logged-in user -------------------------------------------
 async function getAnimalPostsByLoggedInUser(req, res) {
   try {
