@@ -68,7 +68,7 @@ jobs:
       run: |
         # Run OWASP ZAP against your application
         # Adjust the target URL and other configurations as needed
-        docker run --network="host" -t owasp/zap2docker-stable zap-full-scan.py -t https://capstone23.sit.kmutt.ac.th/nw4/#/
+        docker run --network="host" -t owasp/zap2docker-stable zap-full-scan.py -t https://capstone23.sit.kmutt.ac.th/nw4/#/sign-in
 
     # Container Scanning
     - name: Container Security Scan
