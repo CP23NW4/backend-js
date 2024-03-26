@@ -362,6 +362,7 @@ const requestAdoption = async (req, res) => {
           reqAddress: loggedInUser.userAddress,
           reqPhone: loggedInUser.phoneNumber,
           reqIdCard: loggedInUser.idCard,
+          reqPicture: loggedInUser.userPicture,
         },
         note,
         homePicture,
@@ -403,73 +404,97 @@ function isExternalUrl(url) {
 }
 
 // ----------------- Edit status adoption request for a stray animal by ID -------------------------------------------
+// const updateAdoptionRequestStatus = async (req, res) => {
+//   try {
+//     // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+//     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+//     const loggedInUserRole = loggedInUser.role
+//     const loggedInUserId = loggedInUser._id.toString()
+
+//     // Call the validation function to ensure owner/admin authorization
+//     validate(req, res, async () => {
+//       // Retrieve the existing adoption request
+//       const existingAdoptionRequest = await AdoptionRequest.findById(req.params.reqId)
+
+//       if (!existingAdoptionRequest) {
+//         console.log('Adoption request not found')
+//         console.log('---------------------------------------------')
+//         return res.status(404).json({ message: 'Adoption request not found' })
+//       }
+
+//       // Check if the authenticated user is the owner of the stray animal or an admin
+//       const strayAnimal = existingAdoptionRequest.strayAnimal;
+//       if (!strayAnimal || !strayAnimal.owner || !strayAnimal.owner.ownerId) {
+//         console.log('Invalid adoption request: Missing owner information');
+//         console.log('---------------------------------------------');
+//         return res.status(400).json({ message: 'Invalid adoption request: Missing owner information' });
+//       }
+
+//       const ownerId = strayAnimal.owner.ownerId.toString();
+//       if (loggedInUserRole !== 'admin' && ownerId !== loggedInUserId) {
+//         console.log('You are not authorized to edit this adoption request');
+//         console.log('---------------------------------------------');
+//         return res.status(403).json({ message: 'You are not authorized to edit this adoption request' });
+//       }
+
+//       // Validate and update the adoption request status
+//       const { status } = req.body
+//       if (!status || (status !== 'On Request' && status !== 'Accepted')) {
+//         console.log('Invalid status provided')
+//         console.log('---------------------------------------------')
+//         return res.status(400).json({ message: 'Invalid status provided' })
+//       }
+
+//       existingAdoptionRequest.status = status
+//       existingAdoptionRequest.updatedOn = new Date()
+//       await existingAdoptionRequest.save()
+
+//       // Respond with only required fields
+//       const updateStatus = {
+//         status: existingAdoptionRequest.status,
+//         _id: existingAdoptionRequest._id,
+//         updatedOn: existingAdoptionRequest.updatedOn
+//       }
+
+//       res.json({ message: 'Updated adoption request status:', updateStatus })
+//       console.log('Updated adoption request status:', updateStatus )
+//       console.log('---------------------------------------------')
+//       console.log('Updated adoption request status successfully:', existingAdoptionRequest )
+//     })
+//   } catch (error) {
+//     console.error('Error updating adoption request:', error)
+//     res.status(500).json({ message: 'Error updating adoption request' })
+//   }
+// }
 const updateAdoptionRequestStatus = async (req, res) => {
   try {
-    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    // Check if the logged-in user is an admin or if the logged-in user's ID matches the ownerId
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
-
     const loggedInUserRole = loggedInUser.role
     const loggedInUserId = loggedInUser._id.toString()
 
-    // Call the validation function to ensure owner/admin authorization
-    validate(req, res, async () => {
-      // Retrieve the existing adoption request
-      const existingAdoptionRequest = await AdoptionRequest.findById(req.params.reqId)
+    // Fetch the adoption request by ID
+    const adoptionRequest = await AdoptionRequest.findById(req.params.requestId)
 
-      if (!existingAdoptionRequest) {
-        console.log('Adoption request not found')
-        console.log('---------------------------------------------')
-        return res.status(404).json({ message: 'Adoption request not found' })
-      }
+    if (!adoptionRequest) {
+      return res.status(404).json({ message: 'Adoption request not found' })
+    }
 
-      // Check if the authenticated user is the owner of the stray animal or an admin
-      const ownerId = existingAdoptionRequest.requester.reqId.toString()
-      if (loggedInUserRole !== 'admin' && ownerId !== loggedInUserId) {
-        console.log('You are not authorized to edit this adoption request')
-        console.log('---------------------------------------------')
-        return res.status(403).json({ message: 'You are not authorized to edit this adoption request' })
-      }
+    // Check if the logged-in user has permission to edit the status
+    if (loggedInUserRole !== 'admin' && adoptionRequest.owner.ownerId !== loggedInUserId) {
+      return res.status(403).json({ message: 'You are not authorized to edit the status of this adoption request' })
+    }
 
-      // Validate and update the adoption request status
-      const { status } = req.body
-      if (!status || (status !== 'On Request' && status !== 'Accepted')) {
-        console.log('Invalid status provided')
-        console.log('---------------------------------------------')
-        return res.status(400).json({ message: 'Invalid status provided' })
-      }
+    // Update the status of the adoption request
+    adoptionRequest.status = req.body.status
+    await adoptionRequest.save()
 
-      existingAdoptionRequest.status = status
-      existingAdoptionRequest.updatedOn = new Date()
-      await existingAdoptionRequest.save()
-
-      // Respond with only required fields
-      const updateStatus = {
-        status: existingAdoptionRequest.status,
-        _id: existingAdoptionRequest._id,
-        updatedOn: existingAdoptionRequest.updatedOn
-      }
-
-      res.json({ message: 'Updated adoption request status:', updateStatus })
-      console.log('Updated adoption request status:', updateStatus )
-      console.log('---------------------------------------------')
-      console.log('Updated adoption request status successfully:', existingAdoptionRequest )
-    })
+    res.json({ message: 'Adoption request status updated successfully', adoptionRequest })
+    console.log('Adoption request status updated successfully by:', loggedInUser.username)
   } catch (error) {
-    console.error('Error updating adoption request:', error)
-    res.status(500).json({ message: 'Error updating adoption request' })
-  }
-}
-
-// ----------------- GET animal post by Owner -------------------------------------------
-async function getAnimalPostsByOwner(ownerId) {
-  try {
-    // Query stray animals collection based on owner's ID
-    const animalPosts = await StrayAnimal.find({ 'owner.ownerId': ownerId })
-    return animalPosts
-  } catch (error) {
-    console.log(error)
-    console.log('---------------------------------------------')
-    throw error
+    console.error('Error updating adoption request status:', error)
+    res.status(500).json({ message: 'Error updating adoption request status' })
   }
 }
 
@@ -650,7 +675,7 @@ const getComments = async (req, res) => {
   //   const comments = await Comment.find({ saId })
   try {
     const { saId } = req.params
-    const comments = await Comment.find({ 'post.saId': saId })
+    const comments = await Comment.find({ 'post.saId': saId }).sort({ createdOn: -1 })
     if (!comments) {
       console.log('Stray animal not founnd')
       console.log('---------------------------------------------')

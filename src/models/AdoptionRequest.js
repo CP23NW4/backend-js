@@ -25,6 +25,7 @@ const adoptionRequestSchema = new mongoose.Schema({
     reqAddress: String,
     reqPhone: String,
     reqIdCard: String,
+    reqPicture: String,
   },
   note: String,
   homePicture: {
