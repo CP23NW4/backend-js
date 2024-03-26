@@ -88,4 +88,4 @@ jobs:
     # Run OWASP ZAP scan
     - name: OWASP ZAP Scan
       run: |
-        zap-baseline.py -t https://capstone23.sit.kmutt.ac.th/nw4/ -r report.html
+         /snap/bin/zaproxy/zap-baseline.py -t https://capstone23.sit.kmutt.ac.th/nw4/ -r report.html
