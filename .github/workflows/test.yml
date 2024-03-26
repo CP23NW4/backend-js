@@ -57,9 +57,9 @@ jobs:
     #     sudo apt remove -y containerd.io
     #     sudo apt install -y docker.io
 
-# Static Application Security Testing (SAST)
+    # Static Application Security Testing (SAST)
     - name: SAST Scan
-      uses: github/codeql-action@v1
+      # uses: github/codeql-action@v1
       with:
         languages: javascript # Specify the language of your codebase
         
@@ -70,14 +70,14 @@ jobs:
         # Adjust the target URL and other configurations as needed
         docker run --network="host" -t owasp/zap2docker-stable zap-full-scan.py -t https://capstone23.sit.kmutt.ac.th/nw4/#/
 
-# Container Scanning
+    # Container Scanning
     - name: Container Security Scan
       run: |
         # Run Trivy to scan Docker images for vulnerabilities
         # Adjust the Docker image name and tag as needed
         trivy image backend-image:latest
         
-# Dependency Scanning
+    # Dependency Scanning
     - name: Dependency Security Scan
       run: |
         # Run npm audit to scan project dependencies for vulnerabilities
