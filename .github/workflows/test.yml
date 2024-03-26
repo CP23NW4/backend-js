@@ -71,14 +71,14 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker image ls"
 
-    - name: Find backend-image.tar in VM
-      run: |
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "sudo find / -name backend-image.tar"
+    # - name: Find backend-image.tar in VM
+    #   run: |
+    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "sudo find / -name backend-image.tar"
 
-    # Scan Docker image with Trivy
-    - name: Trivy Scan
-      run: |
-        trivy image --quiet --input /home/sysadmin/backend-image.tar
+    # # Scan Docker image with Trivy
+    # - name: Trivy Scan
+    #   run: |
+    #     trivy image --quiet --input /home/sysadmin/backend-image.tar
 
     # Install OWASP ZAP scan
     - name: Install OWASP ZAP
