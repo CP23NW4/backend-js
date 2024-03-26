@@ -80,16 +80,10 @@ jobs:
     #   run: |
     #     trivy image --quiet --input /home/sysadmin/backend-image.tar
 
-   # Check available packages
-    - name: Check available packages
-      run: |
-        apt-cache search owasp-zap
-
     # Install OWASP ZAP
     - name: Install OWASP ZAP
       run: |
-        sudo apt update
-        sudo apt install -y owasp-zap || sudo snap install zaproxy
+        sudo snap install zaproxy --classic
 
     # Run OWASP ZAP scan
     - name: OWASP ZAP Scan
