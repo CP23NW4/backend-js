@@ -61,17 +61,17 @@ jobs:
     # Pull Clair Docker image
     - name: Pull Clair Docker image
       run: |
-        docker pull quay.io/coreos/clair:v4
+        docker pull quay.io/coreos/clair:v4.0.0
 
     # Run Clair container
     - name: Run Clair Container
       run: |
-        docker run -d --name clair --network host quay.io/coreos/clair:v4
+        docker run -d --name clair --network host quay.io/coreos/clair:v4.0.0
 
     # Run Clair scan on Docker image
     - name: Clair Scan
       run: |
-        docker run --network host --rm quay.io/coreos/clair:v4 clair-scanner backend-image
+        docker run --network host --rm quay.io/coreos/clair:v4.0.0 clair-scanner backend-image
 
     # Install OWASP ZAP
     - name: Install OWASP ZAP
