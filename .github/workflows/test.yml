@@ -57,23 +57,22 @@ jobs:
         sudo apt remove -y containerd.io
         sudo apt install -y docker.io
 
-
-    # Pull Clair Docker image
-    - name: Pull Clair Docker image
+    # Install Trivy
+    - name: Install Trivy
       run: |
-        docker pull quay.io/coreos/clair:latest
+        sudo apt update
+        sudo apt install -y wget apt-transport-https gnupg lsb-release
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        sudo apt update
+        sudo apt install -y trivy
 
-    # Run Clair container
-    - name: Run Clair Container
+    # Scan Docker image with Trivy
+    - name: Trivy Scan
       run: |
-        docker run -d --name clair --network host quay.io/coreos/clair:latest
+        trivy --quiet --exit-code 0 --severity HIGH,CRITICAL backend-image
 
-    # Run Clair scan on Docker image
-    - name: Clair Scan
-      run: |
-        docker run --network host --rm quay.io/coreos/clair:latest clair-scanner backend-image
-
-    # Install OWASP ZAP
+    # Install OWASP ZAP scan
     - name: Install OWASP ZAP
       run: |
         sudo apt update
