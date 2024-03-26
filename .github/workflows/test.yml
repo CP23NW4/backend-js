@@ -54,6 +54,7 @@ jobs:
     - name: Install Docker
       run: |
         sudo apt update
+        sudo apt remove -y containerd.io
         sudo apt install -y docker.io
 
 
