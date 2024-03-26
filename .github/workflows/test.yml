@@ -57,19 +57,19 @@ jobs:
         sudo apt remove -y containerd.io
         sudo apt install -y docker.io
 
-    # Install Trivy
-    - name: Install Trivy
-      run: |
-        sudo apt update
-        sudo apt install -y wget apt-transport-https gnupg lsb-release
-        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-        echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-        sudo apt update
-        sudo apt install -y trivy
+    # # Install Trivy
+    # - name: Install Trivy
+    #   run: |
+    #     sudo apt update
+    #     sudo apt install -y wget apt-transport-https gnupg lsb-release
+    #     wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+    #     echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+    #     sudo apt update
+    #     sudo apt install -y trivy
 
-    - name: Show Docker images
-      run: |
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker image ls"
+    # - name: Show Docker images
+    #   run: |
+    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker image ls"
 
     # - name: Find backend-image.tar in VM
     #   run: |
@@ -80,11 +80,16 @@ jobs:
     #   run: |
     #     trivy image --quiet --input /home/sysadmin/backend-image.tar
 
-    # Install OWASP ZAP scan
+   # Check available packages
+    - name: Check available packages
+      run: |
+        apt-cache search owasp-zap
+
+    # Install OWASP ZAP
     - name: Install OWASP ZAP
       run: |
         sudo apt update
-        sudo apt install -y owasp-zap
+        sudo apt install -y owasp-zap || sudo snap install zaproxy
 
     # Run OWASP ZAP scan
     - name: OWASP ZAP Scan
