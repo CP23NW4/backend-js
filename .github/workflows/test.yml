@@ -67,10 +67,13 @@ jobs:
         sudo apt update
         sudo apt install -y trivy
 
-
     - name: Show Docker images
       run: |
         ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker image ls"
+
+    - name: Find backend-image.tar in VM
+      run: |
+        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "sudo find / -name backend-image.tar"
 
     # Scan Docker image with Trivy
     - name: Trivy Scan
