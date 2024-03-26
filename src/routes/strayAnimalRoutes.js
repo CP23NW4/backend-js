@@ -151,6 +151,7 @@ router.get(
 // ----------------- Create comments  --------------------------
 router.post(
   '/:saId/comment',
+  upload.none(),
   body('comment')
   .notEmpty()
   .isLength({ max: 200 })
