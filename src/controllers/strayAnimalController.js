@@ -469,29 +469,42 @@ function isExternalUrl(url) {
 // }
 const updateAdoptionRequestStatus = async (req, res) => {
   try {
-    // Check if the logged-in user is an admin or if the logged-in user's ID matches the ownerId
+    // Retrieve the logged-in user's data
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
     const loggedInUserRole = loggedInUser.role
-    const loggedInUserId = loggedInUser._id.toString()
+
+    // Call the validation function
+    validate(req, res, async () => {
 
     // Fetch the adoption request by ID
-    const adoptionRequest = await AdoptionRequest.findById(req.params.requestId)
+    const adoptionRequest = await AdoptionRequest.findById(req.params.reqId)
 
     if (!adoptionRequest) {
       return res.status(404).json({ message: 'Adoption request not found' })
     }
 
     // Check if the logged-in user has permission to edit the status
-    if (loggedInUserRole !== 'admin' && adoptionRequest.owner.ownerId !== loggedInUserId) {
+    if (loggedInUserRole !== 'admin' && adoptionRequest.owner.ownerId !== loggedInUser._id.toString()) {
       return res.status(403).json({ message: 'You are not authorized to edit the status of this adoption request' })
     }
 
     // Update the status of the adoption request
     adoptionRequest.status = req.body.status
+    adoptionRequest.updatedOn = new Date()
     await adoptionRequest.save()
 
-    res.json({ message: 'Adoption request status updated successfully', adoptionRequest })
-    console.log('Adoption request status updated successfully by:', loggedInUser.username)
+          //  Respond with only required fields
+    const updateStatus = {
+      status: adoptionRequest.status,
+      _id: adoptionRequest._id,
+      updatedOn: adoptionRequest.updatedOn
+      }
+
+    res.json({ message: 'Updated adoption request status:', updateStatus })
+    console.log('Updated adoption request status successfully by:', loggedInUser.username)
+    console.log('---------------------------------------------')
+    console.log('Updated adoption request status successfully:', adoptionRequest )
+  })
   } catch (error) {
     console.error('Error updating adoption request status:', error)
     res.status(500).json({ message: 'Error updating adoption request status' })
@@ -665,7 +678,7 @@ const createComment = async (req, res) => {
     console.log('---------------------------------------------')
     res.status(500).json({ message: 'Unable to create comment' })
   }
-};
+}
 
 // ----------------- Get comments for a post --------------------------
 const getComments = async (req, res) => {
