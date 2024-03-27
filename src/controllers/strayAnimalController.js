@@ -501,7 +501,7 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
   }
 }
 
-// ----------------- GET adoption requests by owners post (Reciever) -------------------------------------------
+// ----------------- GET adoption requests by owners post (Receiver) -------------------------------------------
 async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
   try {
     // Step 1: Retrieve the logged-in user data
@@ -554,7 +554,7 @@ const getAdoptionRequestsBysaId = async (req, res) => {
   }
 }
 
-// ----------------- GET adoption requests by ID --------------------------
+// ----------------- GET adoption requests form (Receiver) by ID --------------------------
 const getAdoptionRequestById = async (req, res) => {
   try {
     const adoptionRequest = await AdoptionRequest.findById(req.params.reqId)
@@ -572,6 +572,35 @@ const getAdoptionRequestById = async (req, res) => {
 
     res.json(adoptionRequest)
     console.log('Get adoption requests by owners post:', adoptionRequest)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    console.error('Error retrieving adoption request:', error)
+    res.status(500).json({ message: 'Error retrieving adoption request' })
+  }
+}
+
+// ----------------- GET adoption requests form (Sender) by ID --------------------------
+const getAdoptionRequestByIdForSender = async (req, res) => {
+  try {
+    const { reqId } = req.params; // Extract adoption request ID from request parameters
+    const loggedInUserId = req.user.userId; // Extract ID of the logged-in user
+
+    // Fetch the adoption request from the database
+    const adoptionRequest = await AdoptionRequest.findById(reqId)
+
+    // Check if the adoption request exists
+    if (!adoptionRequest) {
+      return res.status(404).json({ message: 'Adoption request not found' })
+    }
+
+    // Check if the logged-in user is the requester of the adoption request
+    if (adoptionRequest.requester.reqId.toString() !== loggedInUserId) {
+      return res.status(403).json({ message: 'You are not authorized to view this adoption request' })
+    }
+
+    // Return the adoption request
+    res.json(adoptionRequest)
+    console.log('Get adoption request by ID for sender:', adoptionRequest)
     console.log('---------------------------------------------')
   } catch (error) {
     console.error('Error retrieving adoption request:', error)
@@ -736,6 +765,7 @@ module.exports = {
   getAdoptionRequestsByLoggedInUser,
   getOwnersAdoptionRequestsByLoggedInUser,
   getAdoptionRequestById,
+  getAdoptionRequestByIdForSender,
   getAdoptionRequestsBysaId,
   createComment,
   getComments,
