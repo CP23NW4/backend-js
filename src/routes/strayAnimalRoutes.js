@@ -113,30 +113,52 @@ router.get(
   strayAnimalController.getAdoptionRequestsByLoggedInUser
 )
 
-// ----------------- GET adoption requests by owners (Reciever) ------------
+// ----------------- GET adoption requests by owners (Receiver) ------------
 router.get(
-  '/reciever/reqAdoption',
+  '/receiver/reqAdoption',
   authenticateUser,
   strayAnimalController.getOwnersAdoptionRequestsByLoggedInUser
 )
 
 // ----------------- Get adoption requests filter by ID stray animal post ---------------------
 router.get(
-  '/reciever/:saId/reqAdoption',
+  '/receiver/:saId/reqAdoption',
   authenticateUser,
   strayAnimalController.getAdoptionRequestsBysaId
 )
 
-// ----------------- GET adoption requests form (Reciever) by ID --------------------------
+// ----------------- Edit status adoption request by ID (Receiver) -------------------------------------
+router.put(
+  '/receiver/reqAdoption/:reqId',
+  upload.none(),
+  body('status')
+  .isLength({ max: 10 })
+  .withMessage('Status must be less than 10 characters')
+  .optional()
+  .isIn(['On Request', 'Accepted'])
+  .withMessage('Status must be On Request or Accepted'), 
+  authenticateUser, 
+  strayAnimalController.updateAdoptionRequestStatus)
+
+
+// ----------------- GET adoption requests form (Receiver) by ID --------------------------
 router.get(
-  '/reciever/reqAdoption/:reqId',
+  '/receiver/reqAdoption/:reqId',
   authenticateUser,
   strayAnimalController.getAdoptionRequestById
+)
+
+// ----------------- GET adoption requests form (Sender) by ID --------------------------
+router.get(
+  '/sender/reqAdoption/:reqId',
+  authenticateUser,
+  strayAnimalController.getAdoptionRequestByIdForSender
 )
 
 // ----------------- Create comments  --------------------------
 router.post(
   '/:saId/comment',
+  upload.none(),
   body('comment')
   .notEmpty()
   .isLength({ max: 200 })

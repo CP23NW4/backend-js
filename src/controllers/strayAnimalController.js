@@ -125,6 +125,7 @@ const createStrayAnimal = async (req, res) => {
         owner: {
           ownerId: loggedInUser._id,
           ownerUsername: loggedInUser.username,
+          ownerPicture: loggedInUser.userPicture,
           phoneNumber: loggedInUser.phoneNumber,
           role: loggedInUser.role,
           ownerAddress: loggedInUser.userAddress,
@@ -322,7 +323,8 @@ const requestAdoption = async (req, res) => {
         })
       }
 
-      const { reqAddress, reqPhone, reqIdCard, note, homePicture } = req.body
+      const { note, homePicture } = req.body
+      // const reqAddress = req.params.loggedInUser.userAddress
 
       // Upload pic to Blob
       const containerName = 'usershome'
@@ -341,6 +343,7 @@ const requestAdoption = async (req, res) => {
         owner: {
           ownerId: dataInSaId.owner.ownerId,
           ownerUsername: dataInSaId.owner.ownerUsername,
+          ownerPicture: dataInSaId.owner.ownerPicture,
           phoneNumber: dataInSaId.owner.phoneNumber,
         },
         animal: {
@@ -357,9 +360,16 @@ const requestAdoption = async (req, res) => {
           reqId: loggedInUser._id,
           reqUsername: loggedInUser.username,
           reqName: loggedInUser.name,
-          reqAddress: loggedInUser.userAddress,
+          reqAddress: {
+            PostCode: loggedInUser.userAddress.PostCode,
+            TambonThaiShort: loggedInUser.userAddress.TambonThaiShort,
+            DistrictThaiShort: loggedInUser.userAddress.DistrictThaiShort,
+            ProvinceThai: loggedInUser.userAddress.ProvinceThai,
+            homeAddress: loggedInUser.userAddress.homeAddress,
+          },
           reqPhone: loggedInUser.phoneNumber,
           reqIdCard: loggedInUser.idCard,
+          reqPicture: loggedInUser.userPicture,
         },
         note,
         homePicture,
@@ -398,6 +408,51 @@ const requestAdoption = async (req, res) => {
 // Helper function to check if a URL is external
 function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
+}
+
+// ----------------- Edit status adoption request for a stray animal by ID -------------------------------------------
+const updateAdoptionRequestStatus = async (req, res) => {
+  try {
+    // Retrieve the logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+    const loggedInUserRole = loggedInUser.role
+
+    // Call the validation function
+    validate(req, res, async () => {
+
+    // Fetch the adoption request by ID
+    const adoptionRequest = await AdoptionRequest.findById(req.params.reqId)
+
+    if (!adoptionRequest) {
+      return res.status(404).json({ message: 'Adoption request not found' })
+    }
+
+    // Check if the logged-in user has permission to edit the status
+    if (loggedInUserRole !== 'admin' && adoptionRequest.owner.ownerId !== loggedInUser._id.toString()) {
+      return res.status(403).json({ message: 'You are not authorized to edit the status of this adoption request' })
+    }
+
+    // Update the status of the adoption request
+    adoptionRequest.status = req.body.status
+    adoptionRequest.updatedOn = new Date()
+    await adoptionRequest.save()
+
+    //  Respond with only required fields
+    const updateStatus = {
+    status: adoptionRequest.status,
+     _id: adoptionRequest._id,
+    updatedOn: adoptionRequest.updatedOn
+    }
+
+    res.json({ message: 'Updated adoption request status:', updateStatus })
+    console.log('Updated adoption request status successfully by:', loggedInUser.username)
+    console.log('---------------------------------------------')
+    console.log('Updated adoption request status successfully:', adoptionRequest )
+  })
+  } catch (error) {
+    console.error('Error updating adoption request status:', error)
+    res.status(500).json({ message: 'Error updating adoption request status' })
+  }
 }
 
 // ----------------- GET animal post by Owner -------------------------------------------
@@ -453,7 +508,7 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
   }
 }
 
-// ----------------- GET adoption requests by owners post (Reciever) -------------------------------------------
+// ----------------- GET adoption requests by owners post (Receiver) -------------------------------------------
 async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
   try {
     // Step 1: Retrieve the logged-in user data
@@ -506,7 +561,7 @@ const getAdoptionRequestsBysaId = async (req, res) => {
   }
 }
 
-// ----------------- GET adoption requests by ID --------------------------
+// ----------------- GET adoption requests form (Receiver) by ID --------------------------
 const getAdoptionRequestById = async (req, res) => {
   try {
     const adoptionRequest = await AdoptionRequest.findById(req.params.reqId)
@@ -528,6 +583,35 @@ const getAdoptionRequestById = async (req, res) => {
   } catch (error) {
     console.error('Error retrieving adoption request:', error)
     res.status(500).json({ message: 'Error retrieving adoption request' })
+  }
+}
+
+// ----------------- GET adoption requests form (Sender) by ID --------------------------
+const getAdoptionRequestByIdForSender = async (req, res) => {
+  try {
+    const { reqId } = req.params; // Extract adoption request ID from request parameters
+    const loggedInUserId = req.user.userId; // Extract ID of the logged-in user
+
+    // Fetch the adoption request from the database
+    const adoptionRequest = await AdoptionRequest.findById(reqId)
+
+    // Check if the adoption request exists
+    if (!adoptionRequest) {
+      return res.status(404).json({ message: 'Adoption request not found' })
+    }
+
+    // Check if the logged-in user is the requester of the adoption request
+    if (adoptionRequest.requester.reqId.toString() !== loggedInUserId) {
+      return res.status(403).json({ message: 'You are not authorized to view this adoption request' })
+    }
+
+    // Return the adoption request
+    res.json(adoptionRequest)
+    console.log('Get adoption request by ID for sender:', adoptionRequest)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    console.error('Error retrieving adoption request:', error)
+    res.status(500).json({ message: 'Error retrieving adoption request' });
   }
 }
 
@@ -572,7 +656,7 @@ const createComment = async (req, res) => {
     )
     console.log('User', addComment.user)
     console.log('---------------------------------------------')
-    console.log('Comment: ', addComment.text)
+    console.log('Comment: ', addComment.comment)
     console.log('---------------------------------------------')
   })
   } catch (error) {
@@ -580,25 +664,24 @@ const createComment = async (req, res) => {
     console.log('---------------------------------------------')
     res.status(500).json({ message: 'Unable to create comment' })
   }
-};
+}
 
 // ----------------- Get comments for a post --------------------------
 const getComments = async (req, res) => {
-  // console.log('Fetching comments for a post')
-  // try {
-  //   const { saId } = req.params
-  //   const comments = await Comment.find({ saId })
+
   try {
     const { saId } = req.params
-    const comments = await Comment.find({ 'post.saId': saId })
-    if (!comments) {
-      console.log('Stray animal not founnd')
+    const comments = await Comment.find({ 'post.saId': saId }).sort({ createdOn: -1 })
+
+    const strayAnimal = await StrayAnimal.findById(saId)
+    if (!strayAnimal) {
+      console.log('Stray animal and Comment not found')
       console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'Stray animal not found' })
+      return res.status(404).json({ message: 'Stray animal and Comment not found' })
     }
     
     res.json(comments)
-    console.log('Comments fetched successfully', comments);
+    console.log('Comments fetched successfully', comments)
     console.log('---------------------------------------------')
   } catch (error) {
     console.error('Can not get this comment :', error.message)
@@ -644,19 +727,33 @@ const deleteComment = async (req, res) => {
   console.log('Deleting a comment')
   try {
     const { commentId } = req.params
-    await Comment.findByIdAndDelete(commentId)
+    const loggedInUserId = req.user.userId 
 
-    if (!commentId) {
-      console.log('Stray animal not founnd')
+    // Find the comment by ID
+    const comment = await Comment.findById(commentId)
+
+    // Check if the comment exists
+    if (!comment) {
+      console.log('Comment not found')
       console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'Stray animal not found' })
+      return res.status(404).json({ message: 'Comment not found' })
     }
+
+    // Check if the logged-in user is the owner of the comment
+    if (comment.user.userId !== loggedInUserId) {
+      console.log('Unauthorized: Only the owner can delete the comment')
+      console.log('---------------------------------------------')
+      return res.status(403).json({ message: 'Unauthorized: Only the owner can delete the comment' })
+    }
+
+    // Delete the comment
+    await Comment.findByIdAndDelete(commentId)
 
     console.log('Comment deleted successfully')
     res.json({ message: 'Comment deleted successfully' })
     console.log('---------------------------------------------')
   } catch (error) {
-    console.error('Error deleting comment:', error.message);
+    console.error('Error deleting comment:', error.message)
     console.log('---------------------------------------------')
     res.status(500).json({ message: 'Unable to delete comment' })
   }
@@ -671,10 +768,12 @@ module.exports = {
   updateStrayAnimal,
   deleteStrayAnimal,
   requestAdoption,
+  updateAdoptionRequestStatus,
   getAnimalPostsByLoggedInUser,
   getAdoptionRequestsByLoggedInUser,
   getOwnersAdoptionRequestsByLoggedInUser,
   getAdoptionRequestById,
+  getAdoptionRequestByIdForSender,
   getAdoptionRequestsBysaId,
   createComment,
   getComments,

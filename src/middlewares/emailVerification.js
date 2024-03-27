@@ -3,18 +3,18 @@ const crypto = require('crypto')
 require('dotenv').config({ path: '../.env' })
 
 function generateVerificationToken() {
-  return crypto.randomBytes(20).toString('hex')
+  return crypto.randomBytes(20).toString("hex");
 }
 
 // Step 2: Send Verification Email
-const nodemailer = require('nodemailer')
+const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
   // configure email service
-  service: 'gmail',
+  service: "gmail",
   auth: {
-    user: 'mnwhomefinder@gmail.com',
-    pass: 'lyyi xmzm iofk sgrq',
+    user: "mnwhomefinder@gmail.com",
+    pass: "lyyi xmzm iofk sgrq",
   },
 })
 
@@ -23,7 +23,7 @@ async function sendVerificationEmail(email, verificationToken) {
   const mailOptions = {
     from: ' "mnwhomefinder no-reply" <mnwhomefinder@gmail.com>',
     to: email,
-    subject: 'Verify your email address',
+    subject: "Verify your email address",
     html: `
     <div style=" text-align: center;">
     <img src="https://mnwanimals.blob.core.windows.net/accessories/logo3.png" alt="Logo" style="max-width: 100px; max-height: 100px; margin-top: 20px;"><br>
@@ -40,12 +40,12 @@ async function sendVerificationEmail(email, verificationToken) {
   <p><center>If this wasn't you, please <u href="#" style="color: orange;">Click here.</u></center></p>
   </div>
   `,
-  }
+  };
 
-  await transporter.sendMail(mailOptions)
+  await transporter.sendMail(mailOptions);
 }
 
 module.exports = {
   generateVerificationToken,
   sendVerificationEmail,
-}
+};
