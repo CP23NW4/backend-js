@@ -604,7 +604,7 @@ const getAdoptionRequestByIdForSender = async (req, res) => {
     console.log('---------------------------------------------')
   } catch (error) {
     console.error('Error retrieving adoption request:', error)
-    res.status(500).json({ message: 'Error retrieving adoption request' })
+    res.status(500).json({ message: 'Error retrieving adoption request' });
   }
 }
 
@@ -666,10 +666,11 @@ const getComments = async (req, res) => {
     const { saId } = req.params
     const comments = await Comment.find({ 'post.saId': saId }).sort({ createdOn: -1 })
 
-    if (!comments || comments.length === 0) {
-      console.log('No comments found for the specified post')
+    const strayAnimal = await StrayAnimal.findById(saId)
+    if (!strayAnimal) {
+      console.log('Stray animal and Comment not found')
       console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'No comments found for the specified post' })
+      return res.status(404).json({ message: 'Stray animal and Comment not found' })
     }
     
     res.json(comments)
