@@ -220,7 +220,7 @@ router.post(
     body('userAddress.homeAddress')
       .notEmpty()
       .withMessage('Home address is required')
-      .isLength({ min: 5, max: 200 })
+      .isLength({ max: 100 })
       .withMessage(
         'User home address must be more than 5 and less than or equal to 200 characters'
       ),

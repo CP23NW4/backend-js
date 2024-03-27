@@ -323,7 +323,8 @@ const requestAdoption = async (req, res) => {
         })
       }
 
-      const { reqAddress, reqPhone, reqIdCard, note, homePicture } = req.body
+      const { note, homePicture } = req.body
+      // const reqAddress = req.params.loggedInUser.userAddress
 
       // Upload pic to Blob
       const containerName = 'usershome'
@@ -359,7 +360,13 @@ const requestAdoption = async (req, res) => {
           reqId: loggedInUser._id,
           reqUsername: loggedInUser.username,
           reqName: loggedInUser.name,
-          reqAddress: loggedInUser.userAddress,
+          reqAddress: {
+            PostCode: loggedInUser.userAddress.PostCode,
+            TambonThaiShort: loggedInUser.userAddress.TambonThaiShort,
+            DistrictThaiShort: loggedInUser.userAddress.DistrictThaiShort,
+            ProvinceThai: loggedInUser.userAddress.ProvinceThai,
+            homeAddress: loggedInUser.userAddress.homeAddress,
+          },
           reqPhone: loggedInUser.phoneNumber,
           reqIdCard: loggedInUser.idCard,
           reqPicture: loggedInUser.userPicture,

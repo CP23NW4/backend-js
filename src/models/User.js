@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs')
 const userSchema = new mongoose.Schema({
   userPicture: {
     type: String,
-    default: null,
+    default: 'https://mnwanimals.blob.core.windows.net/accessories/user.png',
   },
   name: String,
   idCard: String,
