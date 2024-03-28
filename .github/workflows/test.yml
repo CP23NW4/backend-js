@@ -69,7 +69,14 @@ jobs:
     #     # Run OWASP ZAP against your application
     #     # Adjust the target URL and other configurations as needed
     #     docker run --network="host" -t owasp/zap2docker-stable zap-full-scan.py -t https://capstone23.sit.kmutt.ac.th/nw4/#/
-
+  
+    # Install Trivy
+    - name: Install Trivy
+      run: |
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -cs) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update && sudo apt-get install -y trivy
+    
     # Container Scanning
     - name: Container Security Scan
       run: |
