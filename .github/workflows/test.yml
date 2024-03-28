@@ -60,7 +60,7 @@ jobs:
         
     - name: Push Docker image to Docker Hub
       run: | 
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker push punchiu/mnwhomefinder/backend-image:latest"
+        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker push backend-image:latest"
 
 
     # - name: Stop and remove existing containers
