@@ -53,7 +53,7 @@ jobs:
         
     - name: Build Docker image
       run: |
-         ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/backend-js && docker build -t punchiu/backend-image:latest ."
+         ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/backend-js && docker build -t backend-image:latest ."
         
     - name: Login to Docker Hub
       run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u punchiu --password-stdin
