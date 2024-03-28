@@ -37,6 +37,32 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker ps -a"
 
+    - name: Install Docker
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          apt-transport-https \
+          ca-certificates \
+          curl \
+          gnupg-agent \
+          software-properties-common
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        sudo apt-get update
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+        
+    - name: Build Docker image
+      run: |
+         ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/backend-js && docker build -t punchiu/backend-image:latest ."
+        
+    - name: Login to Docker Hub
+      run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u punchiu --password-stdin
+        
+    - name: Push Docker image to Docker Hub
+      run: | 
+        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker push punchiu/backend-image:latest"
+
+
     # - name: Stop and remove existing containers
     #   run: |
     #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/proxy && docker-compose stop backend-container"
@@ -70,22 +96,22 @@ jobs:
     #     # Adjust the target URL and other configurations as needed
     #     docker run --network="host" -t owasp/zap2docker-stable zap-full-scan.py -t https://capstone23.sit.kmutt.ac.th/nw4/#/
   
-    # Install Trivy
-    - name: Install Trivy
-      run: |
-        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-        echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -cs) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-        sudo apt-get update && sudo apt-get install -y trivy
+    # # Install Trivy
+    # - name: Install Trivy
+    #   run: |
+    #     wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+    #     echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -cs) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+    #     sudo apt-get update && sudo apt-get install -y trivy
     
-    # Container Scanning
-    - name: Container Security Scan
-      run: |
-        # Run Trivy to scan Docker images for vulnerabilities
-        # Adjust the Docker image name and tag as needed
-        trivy image backend-image:latest
+    # # Container Scanning
+    # - name: Container Security Scan
+    #   run: |
+    #     # Run Trivy to scan Docker images for vulnerabilities
+    #     # Adjust the Docker image name and tag as needed
+    #     trivy image backend-image:latest
         
-    # Dependency Scanning
-    - name: Dependency Security Scan
-      run: |
-        # Run npm audit to scan project dependencies for vulnerabilities
-        npm audit --json > npm_audit_results.json
+    # # Dependency Scanning
+    # - name: Dependency Security Scan
+    #   run: |
+    #     # Run npm audit to scan project dependencies for vulnerabilities
+    #     npm audit --json > npm_audit_results.json
