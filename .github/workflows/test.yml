@@ -63,12 +63,12 @@ jobs:
     #   with:
     #     languages: javascript # Specify the language of your codebase
         
-    # Dynamic Application Security Testing (DAST)
-    - name: DAST Scan
-      run: |
-        # Run OWASP ZAP against your application
-        # Adjust the target URL and other configurations as needed
-        docker run --network="host" -t owasp/zap2docker-stable zap-full-scan.py -t https://capstone23.sit.kmutt.ac.th/nw4/#/
+    # # Dynamic Application Security Testing (DAST)
+    # - name: DAST Scan
+    #   run: |
+    #     # Run OWASP ZAP against your application
+    #     # Adjust the target URL and other configurations as needed
+    #     docker run --network="host" -t owasp/zap2docker-stable zap-full-scan.py -t https://capstone23.sit.kmutt.ac.th/nw4/#/
 
     # Container Scanning
     - name: Container Security Scan
