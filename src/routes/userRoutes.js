@@ -222,7 +222,7 @@ router.post(
       .withMessage('Home address is required')
       .isLength({ max: 100 })
       .withMessage(
-        'User home address must be more than 5 and less than or equal to 200 characters'
+        'User home address must be less than 100 characters'
       ),
   ],
   userController.registerUser
@@ -282,10 +282,11 @@ router.put(
     // Validate userAddress
     body('userAddress').optional(),
     body('userAddress.homeAddress')
-      .optional()
-      .isLength({ min: 5, max: 200 })
+      .notEmpty()
+      .withMessage('Home address is required')
+      .isLength({ max: 100 })
       .withMessage(
-        'User home address must be more than 5 and less than or equal to 200 characters'
+        'User home address must be less than 100 characters'
       ),
   ],
 
@@ -341,10 +342,11 @@ router.put(
     // Validate userAddress
     body('userAddress').optional(),
     body('userAddress.homeAddress')
-      .optional()
-      .isLength({ min: 5, max: 200 })
+      .notEmpty()
+      .withMessage('Home address is required')
+      .isLength({ max: 100 })
       .withMessage(
-        'User home address must be more than 5 and less than or equal to 200 characters'
+        'User home address must be less than 100 characters'
       ),
   ],
   userController.editLoggedInUser
