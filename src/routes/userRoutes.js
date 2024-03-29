@@ -282,8 +282,7 @@ router.put(
     // Validate userAddress
     body('userAddress').optional(),
     body('userAddress.homeAddress')
-      .notEmpty()
-      .withMessage('Home address is required')
+      .optional()
       .isLength({ max: 100 })
       .withMessage(
         'User home address must be less than 100 characters'
@@ -342,8 +341,7 @@ router.put(
     // Validate userAddress
     body('userAddress').optional(),
     body('userAddress.homeAddress')
-      .notEmpty()
-      .withMessage('Home address is required')
+      .optional()
       .isLength({ max: 100 })
       .withMessage(
         'User home address must be less than 100 characters'
