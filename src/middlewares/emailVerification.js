@@ -36,7 +36,7 @@ async function sendVerificationEmail(email, verificationToken) {
       </a></b>
     </div>
   <p><center>Or paste the link into your browser: ${baseUrl}/users/verify/${verificationToken} </center></p><hr style="width:50%;color:gray;">
-  <p><center>This link will expire in 24 hours.</center></p>
+  <p><center>This link will expire in 30 minutes.</center></p>
   <p><center>If this wasn't you, please <u href="#" style="color: orange;">Click here.</u></center></p>
   </div>
   `,
