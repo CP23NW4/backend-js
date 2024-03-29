@@ -240,12 +240,12 @@ async function verifyUser(req, res) {
   // Check if the token exists in temporaryStorage and if it's within 30 minutes
     const userRegistrationData = temporaryStorage[token]
     if (!userRegistrationData || (Date.now() - userRegistrationData.createdOn.getTime()) > 30 * 60 * 1000) {
-      console.log('User registration data not found or already verified')
+      console.log('User registration data not found, already verified or expired token')
       console.log('---------------------------------------------')
       // return res.status(404).json({
       //   message: 'User registration data not found or already verified',
       // })
-      return res.status(200).send(htmlResError)
+      return res.status(404).send(htmlResError)
     }
 
     // Create a new user object using registration data
