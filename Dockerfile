@@ -10,6 +10,9 @@ COPY package*.json ./
 # Install app dependencies
 RUN npm install
 
+# Update app dependencies
+RUN npm update
+
 # Copy all files from the current directory to the working directory in the container
 COPY . .
 
