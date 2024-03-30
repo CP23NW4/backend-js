@@ -533,23 +533,26 @@ async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
 const getAdoptionRequestsBysaId = async (req, res) => {
   try {
     // Retrieve the owner's post ID from the request parameters
-    const saId = req.params.saId
+    const { saId } = req.params
 
-    // Retrieve the logged-in user data
-    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+    // Retrieve the logged-in user's ID
+    const loggedInUserId = req.user.userId
 
-    // Query adoption requests collection based on the owner's post ID
-    const adoptionRequests = await AdoptionRequest.find({
-      'animal.saId': saId,
-    })
-
-    // Check if the logged-in user is the owner of the post
-    const isOwner = adoptionRequests.some(request => request.owner.ownerId.toString() === loggedInUser._id.toString())
-    if (!isOwner) {
-      return res.status(403).json({ 
-        message: 'You are not authorized to view adoption requests for this post' 
-      })
+    // Query the StrayAnimal collection to find the owner's ID associated with the specified post ID
+    const strayAnimal = await StrayAnimal.findById(saId)
+    if (!strayAnimal) {
+      return res.status(404).json({ message: 'Stray animal not found' })
     }
+
+    const ownerId = strayAnimal.owner.ownerId
+
+    // Validate that the logged-in user's ID matches the owner's ID
+    if (loggedInUserId !== ownerId) {
+      return res.status(403).json({ message: 'You are not authorized to access adoption requests for this stray animal post' })
+    }
+
+    // If validation passes, proceed to fetch adoption requests
+    const adoptionRequests = await AdoptionRequest.find({ 'animal.saId': saId })
 
     // Return the adoption requests for the specified stray animal post
     res.json(adoptionRequests)
@@ -561,11 +564,14 @@ const getAdoptionRequestsBysaId = async (req, res) => {
   }
 }
 
+
 // ----------------- GET adoption requests form (Receiver) by ID --------------------------
 const getAdoptionRequestById = async (req, res) => {
   try {
     const { reqId } = req.params // Extract adoption request ID from request parameters
-    const loggedInUserId = req.user.userId // Extract ID of the logged-in user
+
+    // Retrieve the logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
     // Fetch the adoption request from the database
     const adoptionRequest = await AdoptionRequest.findById(reqId)
@@ -576,7 +582,7 @@ const getAdoptionRequestById = async (req, res) => {
     }
 
     // Check if the logged-in user is the requester of the adoption request
-    if (adoptionRequest.owner.ownerId.toString() !== loggedInUserId) {
+    if (adoptionRequest.owner.ownerId !== loggedInUser._id.toString()) {
       return res.status(403).json({ 
         message: 'You are not authorized to view this adoption request' 
       })
