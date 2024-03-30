@@ -533,23 +533,26 @@ async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
 const getAdoptionRequestsBysaId = async (req, res) => {
   try {
     // Retrieve the owner's post ID from the request parameters
-    const saId = req.params.saId
+    const { saId } = req.params
 
-    // Retrieve the logged-in user data
-    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+    // Retrieve the logged-in user's ID
+    const loggedInUserId = req.user.userId
 
-    // Query adoption requests collection based on the owner's post ID
-    const adoptionRequests = await AdoptionRequest.find({
-      'animal.saId': saId,
-    })
-
-    // Check if the logged-in user is the owner of the post
-    const isOwner = adoptionRequests.some(request => request.owner.ownerId.toString() === loggedInUser._id.toString())
-    if (!isOwner) {
-      return res.status(403).json({ 
-        message: 'You are not authorized to view adoption requests for this post' 
-      })
+    // Query the StrayAnimal collection to find the owner's ID associated with the specified post ID
+    const strayAnimal = await StrayAnimal.findById(saId)
+    if (!strayAnimal) {
+      return res.status(404).json({ message: 'Stray animal not found' })
     }
+
+    const ownerId = strayAnimal.owner.ownerId
+
+    // Validate that the logged-in user's ID matches the owner's ID
+    if (loggedInUserId !== ownerId) {
+      return res.status(403).json({ message: 'You are not authorized to access adoption requests for this stray animal post' })
+    }
+
+    // If validation passes, proceed to fetch adoption requests
+    const adoptionRequests = await AdoptionRequest.find({ 'animal.saId': saId })
 
     // Return the adoption requests for the specified stray animal post
     res.json(adoptionRequests)
@@ -561,22 +564,31 @@ const getAdoptionRequestsBysaId = async (req, res) => {
   }
 }
 
+
 // ----------------- GET adoption requests form (Receiver) by ID --------------------------
 const getAdoptionRequestById = async (req, res) => {
   try {
-    const adoptionRequest = await AdoptionRequest.findById(req.params.reqId)
+    const { reqId } = req.params // Extract adoption request ID from request parameters
 
+    // Retrieve the logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+    // Fetch the adoption request from the database
+    const adoptionRequest = await AdoptionRequest.findById(reqId)
+
+    // Check if the adoption request exists
     if (!adoptionRequest) {
       return res.status(404).json({ message: 'Adoption request not found' })
     }
 
-    // Ensure that the requester is authorized to view this request
-    if (adoptionRequest.requester.reqId.toString() !== req.user.userId) {
+    // Check if the logged-in user is the requester of the adoption request
+    if (adoptionRequest.owner.ownerId !== loggedInUser._id.toString()) {
       return res.status(403).json({ 
         message: 'You are not authorized to view this adoption request' 
       })
     }
 
+    // Return the adoption request
     res.json(adoptionRequest)
     console.log('Get adoption requests by owners post:', adoptionRequest)
     console.log('---------------------------------------------')
@@ -589,8 +601,8 @@ const getAdoptionRequestById = async (req, res) => {
 // ----------------- GET adoption requests form (Sender) by ID --------------------------
 const getAdoptionRequestByIdForSender = async (req, res) => {
   try {
-    const { reqId } = req.params; // Extract adoption request ID from request parameters
-    const loggedInUserId = req.user.userId; // Extract ID of the logged-in user
+    const { reqId } = req.params // Extract adoption request ID from request parameters
+    const loggedInUserId = req.user.userId // Extract ID of the logged-in user
 
     // Fetch the adoption request from the database
     const adoptionRequest = await AdoptionRequest.findById(reqId)
@@ -611,7 +623,7 @@ const getAdoptionRequestByIdForSender = async (req, res) => {
     console.log('---------------------------------------------')
   } catch (error) {
     console.error('Error retrieving adoption request:', error)
-    res.status(500).json({ message: 'Error retrieving adoption request' });
+    res.status(500).json({ message: 'Error retrieving adoption request' })
   }
 }
 
