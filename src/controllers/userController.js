@@ -243,7 +243,7 @@ async function verifyUser(req, res) {
       console.log('User registration data not found, already verified or expired token')
       console.log('---------------------------------------------')
       // return res.status(404).json({
-      //   message: 'User registration data not found or already verified',
+      //   message: 'User registration data not found, already verified or expired token',
       // })
       return res.status(404).send(htmlResError)
     }

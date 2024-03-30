@@ -496,7 +496,7 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
     // Query adoption requests collection to find requests matching the logged-in user's ID
     const adoptionRequests = await AdoptionRequest.find({
       'requester.reqId': loggedInUserId,
-    })
+    }).sort({ createdOn: -1 })
 
     // Return the adoption requests for the logged-in user
     res.json(adoptionRequests)
@@ -517,7 +517,7 @@ async function getOwnersAdoptionRequestsByLoggedInUser(req, res) {
     // Step 2: Query adoption requests collection based on the owner's ID (logged-in user's ID)
     const adoptionRequests = await AdoptionRequest.find({
       'owner.ownerId': loggedInUser._id,
-    })
+    }).sort({ createdOn: -1 })
 
     // Step 3: Return the adoption requests
     res.json(adoptionRequests)
@@ -552,7 +552,7 @@ const getAdoptionRequestsBysaId = async (req, res) => {
     }
 
     // If validation passes, proceed to fetch adoption requests
-    const adoptionRequests = await AdoptionRequest.find({ 'animal.saId': saId })
+    const adoptionRequests = await AdoptionRequest.find({ 'animal.saId': saId }).sort({ createdOn: -1 })
 
     // Return the adoption requests for the specified stray animal post
     res.json(adoptionRequests)
