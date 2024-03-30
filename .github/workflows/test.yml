@@ -70,6 +70,11 @@ jobs:
       run: |
         trivy image punchiu/frontend-image:latest
 
+    - name: Run Dependency Security Scan
+      run: |
+        npm install # Ensure dependencies are installed
+        npm audit # Run dependency security scan
+
     # - name: Stop and remove existing containers
     #   run: |
     #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/proxy && docker-compose stop backend-container"
