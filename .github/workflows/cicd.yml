@@ -3,7 +3,7 @@ name: CI/CD for backend
 on:
   push:
     branches:
-      - test-cicd-vm2
+      - master
 
 jobs:
   deploy:
