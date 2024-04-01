@@ -459,7 +459,7 @@ const updateAdoptionRequestStatus = async (req, res) => {
 async function getAnimalPostsByOwner(ownerId) {
   try {
     // Query stray animals collection based on owner's ID
-    const animalPosts = await StrayAnimal.find({ 'owner.ownerId': ownerId })
+    const animalPosts = await StrayAnimal.find({ 'owner.ownerId': ownerId }).sort({ createdOn: -1 })
     return animalPosts
   } catch (error) {
     console.log(error)
@@ -476,6 +476,7 @@ async function getAnimalPostsByLoggedInUser(req, res) {
 
     // Step 2: Query stray animals collection based on owner's ID
     const animalPosts = await getAnimalPostsByOwner(loggedInUser._id.toString())
+
 
     // Step 3: Return the filtered animal posts
     res.json(animalPosts)
