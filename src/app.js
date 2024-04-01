@@ -1,14 +1,14 @@
 // The main entry point to initialize the Express app and connect all the pieces together.
 const express = require('express')
-
 const mongoose = require('mongoose')
 const cors = require('cors')
+const app = express()
+require('dotenv').config({ path: '../.env' })
+
+// Import routes
 const strayAnimalRoutes = require('./routes/strayAnimalRoutes')
 const userRoutes = require('./routes/userRoutes')
-const app = express()
-const multer = require('multer')
-// const { uploadImage } = require('./controllers/strayAnimalController'); // Import the image upload controller function
-require('dotenv').config({ path: '../.env' })
+const thailandRoutes = require('./routes/thailandRoutes')
 
 app.use(cors())
 app.use(express.json())
@@ -24,7 +24,8 @@ mongoose.connect(
 
 // Routes
 app.use('/api/strayAnimals', strayAnimalRoutes)
-app.use('/api/users', userRoutes) // Use user routes at '/users'
+app.use('/api/users', userRoutes)
+app.use('/api/thailand', thailandRoutes)
 
 // Error handling middleware for authentication issues
 app.use((err, req, res, next) => {
@@ -40,7 +41,7 @@ app.listen(PORT, () => {
   console.log(`Server running on port http://localhost:${PORT}`)
 })
 
-app.get('/', async (req, res) => {
+app.get('/api', async (req, res) => {
   res.send('Hello')
 })
 

@@ -1,122 +1,181 @@
 // userController.js to Authentacation User Registration
-
-const jwt = require('jsonwebtoken')
-const User = require('../models/User')
-const bcrypt = require('bcryptjs')
-
 require('dotenv').config({ path: '../.env' })
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
+const { validationResult } = require('express-validator')
 const secretKey = process.env.SECRET_KEY // Accessing the secret key from the environment variable}
 
-const { validationResult } = require('express-validator')
-const azureBlobService = require('../services/azureBlobService') // Adjust the path as needed
+// Import models
+const User = require('../models/User')
 
-// Register a new user
+// Import service
+const azureBlobService = require('../services/azureBlobService') // Adjust the path as needed
+const loggedInUserService = require('../services/loggedInUserService')
+
+// Import email verification middleware
+const emailVerification = require('../middlewares/emailVerification')
+const temporaryStorage = {} // Temporary storage for registration data
+
+//----------------- Validation function --------------------------------------------------
+const validate = (req, res, next) => {
+  const errors = validationResult(req).formatWith(({ value, msg }) => ({
+    value,
+    msg,
+  }))
+  console.log('---------------------------------------------')
+  console.log('errors:', errors.array())
+  console.log('---------------------------------------------')
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() })
+  }
+  next() // Call next middleware if validation passes
+}
+
+//----------------- Register a new user ----------------------------------------------------
 async function registerUser(req, res) {
   console.log('Request file:', req.file)
+  console.log('---------------------------------------------')
   try {
-    const errors = validationResult(req).formatWith(({ value, msg }) => ({
-      value,
-      msg,
-    }))
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
-    }
-
     // Check if picture size exceeds the limit
-    if (req.file && req.file.size > 11 * 1024 * 1024) {
-      console.log('Image size should be less than 10MB.')
+    if (req.file && req.file.size > 3 * 1024 * 1024) {
+      console.log('Image size should be less than 3 MB.')
       console.log('---------------------------------------------')
       return res
         .status(400)
-        .json({ message: 'Image size should be less than 10MB.' })
+        .json({ message: 'Image size should be less than 3 MB.' })
     }
 
-    const {
-      userPicture,
-      name,
-      idCard,
-      username,
-      email,
-      password,
-      phoneNumber,
-      DOB,
-      role,
-      userAddress,
-      homePicture,
-    } = req.body
+    // Call the validation function
+    validate(req, res, async () => {
+      const {
+        userPicture,
+        name,
+        idCard,
+        username,
+        email,
+        password,
+        phoneNumber,
+        DOB,
+        role,
+        userAddress,
+      } = req.body
 
-    const containerName = 'users'
-    let imageUrl
+      // Upload pic to Blob
+      const containerName = 'users'
+      let imageUrl
 
-    if (userPicture && isExternalUrl(userPicture)) {
-      // If the picture is an external URL, use it directly
-      imageUrl = userPicture
-    } else if (req.file) {
-      // If the picture is part of form-data, upload it to Azure Blob Storage
-      const fileBuffer = req.file.buffer // Access the file buffer from form-data
-      const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg` // Change the filename as per your requirements
+      if (userPicture && isExternalUrl(userPicture)) {
+        // If the picture is an external URL, use it directly
+        imageUrl = req.body.userPicture
+      } else if (req.file) {
+        // Set the imageUrl as the Blob URL
+        imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
+      }
 
-      // Upload image to Azure Blob Storage
-      await azureBlobService.uploadImageToBlob(
-        fileBuffer,
-        fileName,
-        containerName
-      )
+      // Check for required fields
+      if (!name || !username || !email || !password || !phoneNumber || !DOB) {
+        console.log('Missing required fields')
+        console.log('---------------------------------------------')
+        return res.status(400).json({
+          message:
+            'Missing required fields: name, username, email, password, DOB, and phone number',
+        })
+      }
 
-      // Set the imageUrl as the Blob URL
-      imageUrl = `https://${process.env.AZURE_STORAGE_ACCOUNT}.blob.core.windows.net/${containerName}/${fileName}`
-    }
-
-    // Check for required fields
-    if (!name || !username || !email || !password || !phoneNumber) {
-      console.log('Missing required fields')
-      console.log('---------------------------------------------')
-      return res.status(400).json({
-        message:
-          'Missing required fields: name, username, email, password, and phone number',
+      const existingUser = await User.findOne({
+        $or: [{ username }, { email }],
       })
-    }
+      if (existingUser) {
+        console.log('Username or email already exists')
+        console.log('---------------------------------------------')
+        return res
+          .status(400)
+          .json({ message: 'Username or email already exists' })
+      }
 
-    const existingUser = await User.findOne({ $or: [{ username }, { email }] })
-    if (existingUser) {
-      console.log('Username or email already exists')
+      const {
+        PostCode,
+        TambonThaiShort,
+        DistrictThaiShort,
+        ProvinceThai,
+        homeAddress,
+      } = userAddress
+
+      // Generate email verification token
+      const verificationToken = emailVerification.generateVerificationToken()
+
+      // Save registration data in temporary storage
+      temporaryStorage[verificationToken] = {
+        name,
+        username,
+        email,
+        password,
+        phoneNumber,
+        userPicture,
+        idCard: idCard,
+        DOB: DOB,
+        role: role,
+        userAddress: {
+          PostCode,
+          TambonThaiShort,
+          DistrictThaiShort,
+          ProvinceThai,
+          homeAddress,
+        },
+        createdOn: new Date(),
+        verificationToken,
+      }
+
+      // Conditionally include userPicture if imageUrl is defined
+      if (imageUrl) {
+        temporaryStorage[verificationToken].userPicture = imageUrl
+      }
+
+      // If userAddress is provided, validate and add it to the new user document
+      if (userAddress) {
+        // Ensure that the required address fields are present
+        if (
+          !PostCode ||
+          !TambonThaiShort ||
+          !DistrictThaiShort ||
+          !ProvinceThai ||
+          !homeAddress
+        ) {
+          console.log('Incomplete address information')
+          console.log('---------------------------------------------')
+          return res
+            .status(400)
+            .json({ message: 'Incomplete address information' })
+        }
+
+        // Add the validated address fields to the newUserFields object
+        temporaryStorage[verificationToken].userAddress = {
+          PostCode,
+          TambonThaiShort,
+          DistrictThaiShort,
+          ProvinceThai,
+          homeAddress,
+        }
+      }
+
+      // Send verification email
+      await emailVerification.sendVerificationEmail(email, verificationToken)
+
+      res.status(201).json({
+        message:
+          'User registration successfully! Please verify your email address in 30 minutes.',
+        email: temporaryStorage[verificationToken].email,
+      })
+      console.log(
+        'User registration successfully! Please verify your email address in 30 minutes.',
+        {
+          email: temporaryStorage[verificationToken].email,
+          token: temporaryStorage[verificationToken].verificationToken,
+        }
+      )
       console.log('---------------------------------------------')
-      return res
-        .status(400)
-        .json({ message: 'Username or email already exists' })
-    }
-
-    // Create a new user object with required fields
-    const newUserFields = new User({
-      name,
-      username,
-      email,
-      password,
-      phoneNumber,
-      // userPicture: imageUrl,
-      idCard: idCard,
-      DOB: DOB,
-      role: role,
-      userAddress: userAddress,
-      homePicture: homePicture,
-      createdOn: new Date(),
-      updatedOn: new Date(),
     })
-    // Conditionally include userPicture if imageUrl is defined
-    if (imageUrl) {
-      newUserFields.userPicture = imageUrl
-    }
-    const newUser = new User(newUserFields)
-    await newUser.save()
-
-    res
-      .status(201)
-      .json({ message: 'User created successfully!', user: newUser })
-    console.log('User created successfully!', newUser)
-    console.log('---------------------------------------------')
   } catch (error) {
-    console.log(error)
-    console.log('---------------------------------------------')
     res.status(500).json({ message: error.message })
   }
 }
@@ -126,21 +185,135 @@ function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
 }
 
-// Helper function to read a file asynchronously
-function readFileAsync(filePath) {
-  return new Promise((resolve, reject) => {
-    fs.readFile(filePath, (err, data) => {
-      if (err) reject(err)
-      else resolve(data)
-    })
-  })
+// ----------------- Verify by send email to user -----------------------------------------------
+async function verifyUser(req, res) {
+  try {
+    const { token } = req.params
+
+    const htmlResError = `
+    <div style="text-align: center; height: 80vh; display: flex; align-items: center; justify-content: center;">
+    <div>
+    <img
+      src="https://mnwanimals.blob.core.windows.net/accessories/warning.png"
+      alt="Logo"
+      style="max-width: 100px; max-height: 100px; margin-top: 20px"
+    /><br />
+    <br />
+    <b style="font-size: 40px; margin: 0; color: black"> Sorry! </b><br /><br />
+    <div style="color: black">
+      <center>User registration data not found or already verified.</center>
+    </div>
+    <br />
+    <div style="color: black">
+      <center>Please go back to check your account.</center>
+    </div>
+    <br />
+    <div
+      style="
+        width: 200px;
+        height: 50px;
+        background-color: #e84b39;
+        border-radius: 20px;
+        line-height: 50px;
+        margin: auto;
+      "
+    >
+      <b
+        ><a
+          href="https://capstone23.sit.kmutt.ac.th/nw4/#/sign-in"
+          style="
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+          "
+        >
+          SIGN IN
+        </a></b
+      >
+    </div>
+  </div>
+  </div>
+  `
+
+  // Check if the token exists in temporaryStorage and if it's within 30 minutes
+    const userRegistrationData = temporaryStorage[token]
+    if (!userRegistrationData || (Date.now() - userRegistrationData.createdOn.getTime()) > 30 * 60 * 1000) {
+      console.log('User registration data not found, already verified or expired token')
+      console.log('---------------------------------------------')
+      // return res.status(404).json({
+      //   message: 'User registration data not found, already verified or expired token',
+      // })
+      return res.status(404).send(htmlResError)
+    }
+
+    // Create a new user object using registration data
+    const newUser = new User(userRegistrationData)
+
+    // Save user to the database
+    await newUser.save()
+
+    // Clear temporary storage
+    delete temporaryStorage[token]
+
+    const htmlResVerified = `
+    <div style="text-align: center; height: 80vh; display: flex; align-items: center; justify-content: center;">
+    <div>
+      <img
+        src="https://mnwanimals.blob.core.windows.net/accessories/verified.png"
+        alt="Logo"
+        style="max-width: 100px; max-height: 100px; margin-top: 20px"
+      /><br />
+      <br />
+      <b style="font-size: 40px; margin: 0; color: black"> Verified! </b
+      ><br /><br />
+      <div style="color: black">
+        <center>You have successfully verified account.</center>
+      </div>
+      <br />
+      <div style="color: black"><center>Please go back to sign in.</center></div>
+      <br />
+      <div
+        style="
+          width: 200px;
+          height: 50px;
+          background-color: #59BF40;
+          border-radius: 20px;
+          line-height: 50px;
+          margin: auto;
+        "
+      >
+        <b><a href="https://capstone23.sit.kmutt.ac.th/nw4/#/sign-in"
+          style="
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+          "
+        >
+          SIGN IN
+        </a></b>
+        <p>User: ${newUser.email}</p>
+      </div>
+    </div>     
+    </div>
+    `
+
+    // res
+    //   .status(200)
+    //   .json({ message: 'User email verified successfully!', user: newUser })
+    res.status(200).send(htmlResVerified)
+    console.log(`User ${newUser.email} confirmed registration.`, newUser)
+    console.log('---------------------------------------------')
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
 }
 
-// Login user
+// ----------------- Login user -----------------------------------------------------
 async function loginUser(req, res) {
-  console.log('Request Body:', req.body)
-  console.log('---------------------------------------------')
-
   try {
     const { identifier, password } = req.body
 
@@ -174,14 +347,20 @@ async function loginUser(req, res) {
 
     // Create token payload
     const tokenPayload = {
-      userId: user._id,
-      username: user.username, // Add any other necessary user data here
-      // Add more user data as needed
+      userId: user._id.toString(),
+      username: user.username,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      DOB: user.DOB,
+      role: user.role,
+      userAddress: user.userAddress,
+      userPicture: user.userPicture,
     }
 
     const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '1h' })
     res.status(200).json({ token, user: tokenPayload })
     console.log('User:', identifier, 'logged-in successfully!')
+    console.log(tokenPayload)
     console.log('---------------------------------------------')
   } catch (error) {
     console.log(error)
@@ -190,38 +369,7 @@ async function loginUser(req, res) {
   }
 }
 
-// Get logged-in user data
-async function getLoggedInUserData(req, res) {
-  console.log('Logged-in user:', req.user)
-  console.log('---------------------------------------------')
-  try {
-    // Retrieve user data from the request object (added by middleware)
-    const userId = req.user.userId // Extract userId from the logged-in user data
-
-    // Fetch user data from the database using the userId
-    const loggedInUser = await User.findById(userId)
-
-    if (!loggedInUser) {
-      console.log('Logged-in user not found')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'Logged-in user not found' })
-    }
-
-    // Send the user data in the response
-    res.status(200).json(loggedInUser)
-    console.log(loggedInUser)
-    console.log(loggedInUser._id)
-    console.log(loggedInUser.name)
-    console.log(loggedInUser.username)
-    console.log(loggedInUser.role)
-    console.log('---------------------------------------------')
-  } catch (error) {
-    console.log(error)
-    res.status(500).json({ message: error.message })
-  }
-}
-
-// Get all users
+// ----------------- Get all users ------------------------------------------------------------
 async function getAllUsers(req, res) {
   try {
     const users = await User.find()
@@ -235,31 +383,23 @@ async function getAllUsers(req, res) {
   }
 }
 
-// Get user by ID
+// ----------------- Get user by ID -------------------------------------------
 async function getUserById(req, res) {
   try {
-    // Retrieve logged-in user's data
-    const loggedInUserId = req.user.userId
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    await loggedInUserService.getLoggedInUserDataNoRes(req)
 
-    // Fetch user data from the database
-    const loggedInUser = await User.findById(loggedInUserId)
-
-    if (!loggedInUser) {
-      console.log('Logged-in user not found')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'Logged-in user not found' })
-    }
-
+    // Fetch user data from the database using the provided userId
     const user = await User.findById(req.params.userId)
+
     if (!user) {
       console.log('User not found')
       console.log('---------------------------------------------')
       return res.status(404).json({ message: 'User not found' })
     }
+
+    // Send the user data in the response
     res.json({ user })
-    console.log('Logged-in userId:', loggedInUser._id)
-    console.log('Logged-in username:', loggedInUser.username)
-    console.log('---------------------------------------------')
     console.log('Requested user:', user)
     console.log('---------------------------------------------')
   } catch (err) {
@@ -269,40 +409,21 @@ async function getUserById(req, res) {
   }
 }
 
-// Delete user by ID
+// ----------------- Delete user by ID (Admin only) -----------------------------------------
 async function deleteUserById(req, res) {
-  console.log('Request Body:', req.body)
-  console.log('Request User:', req.user)
-  console.log('---------------------------------------------')
-
   try {
-    const userId = req.user.userId
-    console.log('User ID:', userId)
-    // console.log('---------------------------------------------')
-    const loggedInUser = await User.findById(userId)
-
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
     const loggedInUserRole = loggedInUser.role
-    // console.log('Logged-in ID:', loggedInUserId)
-    console.log('Logged-in role:', loggedInUserRole)
-    console.log('---------------------------------------------')
+    const loggedInuserId = loggedInUser._id.toString()
 
+    // Retrieve the user account by userId
     const existingUserData = await User.findById(req.params.userId)
-    console.log('user post:', existingUserData)
-    console.log('---------------------------------------------')
-
-    const existingUserId = existingUserData._id
-    console.log('user post ID:', existingUserId)
-    console.log('---------------------------------------------')
+    const existingUserId = existingUserData._id.toString()
 
     // Check if the authenticated user is an admin
-    if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
+    if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
       console.log('You are not authorized to delete this user')
       console.log('---------------------------------------------')
       return res
@@ -310,7 +431,7 @@ async function deleteUserById(req, res) {
         .json({ message: 'You are not authorized to delete this user' })
     }
 
-    // Find the user by userId
+    // Find the user account by userId
     const user = await User.findById(existingUserId)
 
     if (!user) {
@@ -323,7 +444,17 @@ async function deleteUserById(req, res) {
     const deletedUser = await User.findByIdAndDelete(existingUserId)
 
     res.json({ message: 'User deleted:', deletedUser })
-    console.log('User deleted', deletedUser)
+    console.log(
+      'User ID:',
+      deletedUser._id.toString(),
+      'username:',
+      deletedUser.username
+    )
+    console.log('is deleted by', {
+      ID: loggedInuserId,
+      username: loggedInUser.username,
+      role: loggedInUserRole,
+    })
     console.log('---------------------------------------------')
   } catch (err) {
     console.log(err)
@@ -332,196 +463,156 @@ async function deleteUserById(req, res) {
   }
 }
 
-// Edit user by ID - Placeholder for future use (using PUT)
+// ----------------- Edit user by ID (Admin only) ----------------------------------------------------
 async function editUserById(req, res) {
-  console.log('Request Body:', req.body)
-  console.log('Request User:', req.user)
-  console.log('---------------------------------------------')
-
   try {
-    const userId = req.user.userId
-    console.log('User ID:', userId)
-    // console.log('---------------------------------------------')
-    const loggedInUser = await User.findById(userId)
-
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
     const loggedInUserRole = loggedInUser.role
-    // console.log('Logged-in ID:', loggedInUserId)
-    console.log('Logged-in role:', loggedInUserRole)
-    console.log('---------------------------------------------')
+    const loggedInuserId = loggedInUser._id.toString()
 
-    const existingUserData = await User.findById(req.params.userId)
-    console.log('user post:', existingUserData)
-    console.log('---------------------------------------------')
-
-    const existingUserId = existingUserData._id
-    console.log('user post ID:', existingUserId)
-    console.log('---------------------------------------------')
-
-    // Check if the authenticated user is an admin
-    if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
-      console.log('You are not authorized to edit this user')
+    // Call the validation function
+    validate(req, res, async () => {
+      const existingUserData = await User.findById(req.params.userId)
+      console.log('user post:', existingUserData)
       console.log('---------------------------------------------')
-      return res
-        .status(403)
-        .json({ message: 'You are not authorized to edit this user' })
-    }
 
-    // Find the user by userId
-    const user = await User.findById(userId)
+      const existingUserId = existingUserData._id.toString()
 
-    if (!user) {
-      console.log('User not found')
+      // Check if the authenticated user is an admin
+      if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
+        console.log('You are not authorized to edit this user')
+        console.log('---------------------------------------------')
+        return res
+          .status(403)
+          .json({ message: 'You are not authorized to edit this user' })
+      }
+
+      // Find the user by userId
+      const user = await User.findById(existingUserId)
+
+      if (!user) {
+        console.log('User not found')
+        console.log('---------------------------------------------')
+        return res.status(404).json({ message: 'User not found' })
+      }
+
+      const updatedFields = {}
+      const currentDate = new Date()
+
+      if (req.body.username) {
+        updatedFields.username = req.body.username
+      }
+
+      if (req.body.phoneNumber) {
+        updatedFields.phoneNumber = req.body.phoneNumber
+      }
+      if (req.body.idCard) {
+        updatedFields.idCard = req.body.idCard
+      }
+
+      if (req.body.userAddress) {
+        updatedFields.userAddress = req.body.userAddress
+      }
+
+      // If there are fields to update, add/update the 'updatedOn' field
+      if (Object.keys(updatedFields).length > 0) {
+        updatedFields.updatedOn = currentDate
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(
+        req.params.userId,
+        { $set: updatedFields },
+        { new: true }
+      )
+
+      res.json({ message: 'Updated field:', updatedFields })
+      console.log('Updated field:', updatedFields)
       console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'User not found' })
-    }
-
-    const updatedFields = {}
-    const currentDate = new Date()
-
-    if (req.body.userAddress) {
-      updatedFields.userAddress = req.body.userAddress
-    }
-
-    if (req.body.phoneNumber) {
-      updatedFields.phoneNumber = req.body.phoneNumber
-    }
-
-    // If there are fields to update, add/update the 'updatedOn' field
-    if (Object.keys(updatedFields).length > 0) {
-      updatedFields.updatedOn = currentDate
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.userId,
-      { $set: updatedFields },
-      { new: true }
-    )
-
-    res.json({ message: 'Updated field:', updatedFields })
-    // res.json(updatedStrayAnimal)
-    console.log('Updated field:', updatedFields)
-    console.log('---------------------------------------------')
-    console.log('Updated animal:', updatedUser)
-    console.log('---------------------------------------------')
-  } catch (err) {
-    res.status(500).json({ message: 'Error updating stray animal' })
-  }
-}
-
-// Edit Logged in user - Placeholder for future use (using PUT)
-async function editLoggedInUser(req, res) {
-  console.log('Request Body:', req.body)
-  console.log('Request User:', req.user)
-  console.log('---------------------------------------------')
-
-  try {
-    const userId = req.user.userId
-    console.log('User ID:', userId)
-    // console.log('---------------------------------------------')
-    const loggedInUser = await User.findById(userId)
-
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
-
-    // const loggedInUserId = loggedInUser._id
-    // // const loggedInUserUsername = loggedInUser.username
-    const loggedInUserRole = loggedInUser.role
-    // console.log('Logged-in ID:', loggedInUserId)
-    console.log('Logged-in role:', loggedInUserRole)
-    console.log('---------------------------------------------')
-
-    const existingUserData = await User.findById(loggedInUser)
-    console.log('user post:', existingUserData)
-    console.log('---------------------------------------------')
-
-    const existingUserId = existingUserData._id.toString()
-    console.log('user post ID:', existingUserId)
-    console.log('---------------------------------------------')
-
-    // Check if the authenticated user is an admin
-    if (loggedInUserRole !== 'admin' && existingUserId !== userId) {
-      console.log('You are not authorized to edit this user')
-      console.log('---------------------------------------------')
-      return res
-        .status(403)
-        .json({ message: 'You are not authorized to edit this user' })
-    }
-
-    const updatedFields = {}
-    const currentDate = new Date()
-
-    if (req.body.userAddress) {
-      updatedFields.userAddress = req.body.userAddress
-    }
-
-    if (req.body.phoneNumber) {
-      updatedFields.phoneNumber = req.body.phoneNumber
-    }
-
-    // If there are fields to update, add/update the 'updatedOn' field
-    if (Object.keys(updatedFields).length > 0) {
-      updatedFields.updatedOn = currentDate
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      existingUserData._id,
-      { $set: updatedFields },
-      { new: true }
-    )
-
-    res.json({ message: 'Updated field:', updatedFields })
-    console.log('Updated field:', updatedFields)
-    console.log('---------------------------------------------')
-    console.log('Updated user:', updatedUser)
-    console.log('---------------------------------------------')
+    })
   } catch (err) {
     res.status(500).json({ message: 'Error updating user' })
   }
 }
 
-// Delete user by ID
-async function deleteLoggedInUser(req, res) {
-  console.log('Request User:', req.user)
-  console.log('---------------------------------------------')
-
+// ----------------- Edit Logged in user -------------------------------------------------------
+async function editLoggedInUser(req, res) {
   try {
-    const loggedInUser = await User.findById(req.user.userId)
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
-    // Check if the user is logged in
-    if (!loggedInUser) {
-      console.log('Unauthorized')
-      console.log('---------------------------------------------')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
-
-    const loggedInUserId = loggedInUser._id.toString()
-    const loggedInUserUname = loggedInUser.username
     const loggedInUserRole = loggedInUser.role
-    console.log('Logged-in ID:', loggedInUserId)
-    console.log('Logged-in username:', loggedInUserUname)
-    console.log('Logged-in role:', loggedInUserRole)
-    console.log('---------------------------------------------')
+    const loggedInuserId = loggedInUser._id.toString()
+
+    // Call the validation function
+    validate(req, res, async () => {
+      const existingUserData = await User.findById(loggedInUser)
+      const existingUserId = existingUserData._id.toString()
+      console.log('user post:', existingUserData)
+      console.log('---------------------------------------------')
+
+      // Check if the authenticated user is an admin
+      if (loggedInUserRole !== 'admin' && existingUserId !== loggedInuserId) {
+        console.log('You are not authorized to edit this user')
+        console.log('---------------------------------------------')
+        return res
+          .status(403)
+          .json({ message: 'You are not authorized to edit this user' })
+      }
+
+      const updatedFields = {}
+      const currentDate = new Date()
+
+      if (req.body.username) {
+        updatedFields.username = req.body.username
+      }
+      if (req.body.phoneNumber) {
+        updatedFields.phoneNumber = req.body.phoneNumber
+      }
+      if (req.body.idCard) {
+        updatedFields.idCard = req.body.idCard
+      }
+      if (req.body.userAddress) {
+        updatedFields.userAddress = req.body.userAddress
+      }
+      // If there are fields to update, add/update the 'updatedOn' field
+      if (Object.keys(updatedFields).length > 0) {
+        updatedFields.updatedOn = currentDate
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(
+        existingUserData._id,
+        { $set: updatedFields },
+        { new: true }
+      )
+
+      res.json({ message: 'Updated field:', updatedFields })
+      console.log('Updated field:', updatedFields)
+      console.log('---------------------------------------------')
+    })
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating user' })
+  }
+}
+
+// ----------------- Delete Logged in user -------------------------------------------
+async function deleteLoggedInUser(req, res) {
+  try {
+    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+    const loggedInUserRole = loggedInUser.role
+    const loggedInUserId = loggedInUser._id.toString()
 
     // Check if the user is logged in and request is matches or not
     const existingUserData = await User.findById(loggedInUser)
-    // console.log('user post:', existingUserData)
-    // console.log('---------------------------------------------')
-
     const existingUserId = existingUserData._id.toString()
-    console.log('user account ID:', existingUserId)
-    console.log('username:', existingUserData.username)
-    console.log('email:', existingUserData.email)
+
+    console.log('User account:', {
+      ID: existingUserId,
+      username: existingUserData.username,
+    })
     console.log('---------------------------------------------')
 
     // Check if the authenticated user is an admin
@@ -537,11 +628,14 @@ async function deleteLoggedInUser(req, res) {
     const deletedUser = await User.findByIdAndDelete(existingUserId)
 
     res.json({ message: 'User deleted:', deletedUser })
-    console.log('User deleted:', {
-      ID: deletedUser._id.toString(),
-      username: deletedUser.username,
-    })
-    // console.log('User deleted:', deletedUser.username)
+    console.log(
+      'User:',
+      {
+        ID: deletedUser._id.toString(),
+        username: deletedUser.username,
+      },
+      'is deleted'
+    )
     console.log('---------------------------------------------')
   } catch (err) {
     console.log(err)
@@ -551,13 +645,15 @@ async function deleteLoggedInUser(req, res) {
 }
 
 module.exports = {
+  validate,
   registerUser,
   loginUser,
   getAllUsers,
   getUserById,
   deleteUserById,
   editUserById,
-  getLoggedInUserData,
+  // getLoggedInUserData,
   editLoggedInUser,
   deleteLoggedInUser,
+  verifyUser,
 }
