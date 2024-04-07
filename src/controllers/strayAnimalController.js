@@ -717,15 +717,12 @@ const getComments = async (req, res) => {
   try {
     const { saId } = req.params
 
-    // const comments = await Comment.find({ 'post.saId': saId }).sort({ createdOn: -1 })
-
     const strayAnimal = await StrayAnimal.findById(saId)
     if (!strayAnimal) {
       console.log('Stray animal and Comment not found')
       console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Stray animal and Comment not found' })
     }
-
         // Find comments for the given stray animal post ID
         const comments = await Comment.find({ post: saId })
         .populate({
@@ -734,18 +731,8 @@ const getComments = async (req, res) => {
           model: User,
         }).sort({ createdOn: -1 })
     
-        // Populate StrayAnimal separately to include only saId and saName
-        const populatedComments = await Promise.all(comments.map(async (comment) => {
-          const populatedStrayAnimal = await StrayAnimal
-          .populate(comment, { path: 'post', select: 'saId name' })
-          return populatedStrayAnimal
-        }))
-    
-
-    res.json(populatedComments)
-
-    // res.json(comments)
-    console.log('Comments fetched successfully', populatedComments)
+    res.json(comments)
+    console.log('Comments fetched successfully', comments)
     console.log('---------------------------------------------')
   } catch (error) {
     console.error('Can not get this comment :', error.message)
