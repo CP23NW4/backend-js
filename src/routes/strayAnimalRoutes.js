@@ -8,11 +8,19 @@ const upload = multer()
 const strayAnimalController = require('../controllers/strayAnimalController')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
+// const { getDogStrayAnimals } = require('./controllers/strayAnimalController')
+
 // ----------------- Get all stray animals ----------------------------------------------
 router.get('/all', strayAnimalController.getAllStrayAnimals)
 
 // ----------------- Get stray animal by ID ---------------------------------------------
 router.get('/:saId', strayAnimalController.getStrayAnimalById)
+
+// ----------------- Get stray animal filter by type Dog ---------------------------------
+router.get('/all/dog', strayAnimalController.getAllStrayAnimalDogs)
+
+// ----------------- Get stray animal filter by type Cat ---------------------------------
+router.get('/all/cat', strayAnimalController.getAllStrayAnimalCats)
 
 // ----------------- Create stray animal post ------------------------------------------------
 router.post(
@@ -191,5 +199,7 @@ router.delete(
   strayAnimalController.deleteComment
 )
 
+// ----------------- Get posts of stray animals filter by Unavailable (Adopted) --------------------------
+router.get('/all/adopted', strayAnimalController.getAdoptedStrayAnimals)
 
 module.exports = router

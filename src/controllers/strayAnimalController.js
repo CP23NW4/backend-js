@@ -61,6 +61,45 @@ const getStrayAnimalById = async (req, res) => {
   }
 }
 
+// ----------------- Get stray animal filter by type Dog ---------------------------------
+const getAllStrayAnimalDogs = async (req, res) => {
+  try {
+    const allStrayDogs = await StrayAnimal.find({ type: 'Dog', status: 'Available' }).sort({ createdOn: -1 })
+    if (!allStrayDogs) {
+      console.log('Animal not founnd')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'Stray animal not found' })
+    }
+
+    res.json(allStrayDogs)
+    console.log('All post stray dogs:', allStrayDogs)
+    console.log('---------------------------------------------')
+  } catch (err) {
+    console.log('Can not get animals')
+    console.log('---------------------------------------------')
+    res.status(500).json({ message: err.message })
+  }
+}
+
+// ----------------- Get stray animal filter by type Cat ---------------------------------
+const getAllStrayAnimalCats = async (req, res) => {
+  try {
+    const allStrayCats = await StrayAnimal.find({ type: 'Cat', status: 'Available' }).sort({ createdOn: -1 })
+    if (!allStrayCats) {
+      console.log('Animal not founnd')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'Stray animal not found' })
+    }
+    res.json(allStrayCats)
+    console.log('All post stray cats:', allStrayCats)
+    console.log('---------------------------------------------')
+  } catch (err) {
+    console.log('Can not get animals')
+    console.log('---------------------------------------------')
+    res.status(500).json({ message: err.message })
+  }
+}
+
 //----------------- Create a new stray animal --------------------------------------------
 const createStrayAnimal = async (req, res) => {
   console.log('Request File:', req.file)
@@ -635,11 +674,11 @@ const createComment = async (req, res) => {
     // Call the validation function
     validate(req, res, async () => {
     const { saId } = req.params // Retrieve stray animal data
-    const { userId } = req.user // // Retrieve user data
+    const { userId } = req.user // Retrieve user data
     const { comment } = req.body
 
     // Fetch stray animal data from the database
-    const strayAnimal = await StrayAnimal.findById(saId);
+    const strayAnimal = await StrayAnimal.findById(saId)
     if (!strayAnimal) {
       console.log('Stray animal not found')
       console.log('---------------------------------------------')
@@ -648,29 +687,22 @@ const createComment = async (req, res) => {
 
     // Create a new comment
     const addComment = new Comment({
-      post: {
-        saId: strayAnimal._id,
-        saName: strayAnimal.name,
-      },
-      user: {
-        userId,
-        username: req.user.username, 
-        userPicture: req.user.userPicture,
-      },
-      comment,
+      post: saId,
+      user: userId,
+      comment: comment
     })
     await addComment.save()
 
     res.status(201).json(addComment)
     console.log('---------------------------------------------')
-    console.log('Comment created successfully by: ', req.user.username
-    )
-    console.log('Stray Animal Post', addComment.post
-    )
-    console.log('User', addComment.user)
+    console.log('Comment created successfully by: ', req.user.username)
     console.log('---------------------------------------------')
     console.log('Comment: ', addComment.comment)
     console.log('---------------------------------------------')
+    console.log('saId', addComment.post.saId)
+    console.log('UserId', addComment.user.userId)
+
+
   })
   } catch (error) {
     console.error('Error creating comment:', error.message)
@@ -684,7 +716,8 @@ const getComments = async (req, res) => {
 
   try {
     const { saId } = req.params
-    const comments = await Comment.find({ 'post.saId': saId }).sort({ createdOn: -1 })
+
+    // const comments = await Comment.find({ 'post.saId': saId }).sort({ createdOn: -1 })
 
     const strayAnimal = await StrayAnimal.findById(saId)
     if (!strayAnimal) {
@@ -692,9 +725,27 @@ const getComments = async (req, res) => {
       console.log('---------------------------------------------')
       return res.status(404).json({ message: 'Stray animal and Comment not found' })
     }
+
+        // Find comments for the given stray animal post ID
+        const comments = await Comment.find({ post: saId })
+        .populate({
+          path: 'user',
+          select: 'userId username userPicture',
+          model: User,
+        }).sort({ createdOn: -1 })
     
-    res.json(comments)
-    console.log('Comments fetched successfully', comments)
+        // Populate StrayAnimal separately to include only saId and saName
+        const populatedComments = await Promise.all(comments.map(async (comment) => {
+          const populatedStrayAnimal = await StrayAnimal
+          .populate(comment, { path: 'post', select: 'saId name' })
+          return populatedStrayAnimal
+        }))
+    
+
+    res.json(populatedComments)
+
+    // res.json(comments)
+    console.log('Comments fetched successfully', populatedComments)
     console.log('---------------------------------------------')
   } catch (error) {
     console.error('Can not get this comment :', error.message)
@@ -772,11 +823,32 @@ const deleteComment = async (req, res) => {
   }
 }
 
+// ----------------- Get posts of stray animals filter by Unavailable (Adopted) --------------------------
+const getAdoptedStrayAnimals = async (req, res) => {
+  try {
+    const adoptedStrayAnimals = await StrayAnimal.find({ status: 'Unavailable' }).sort({ createdOn: -1 })
+    if (!adoptedStrayAnimals) {
+      console.log('Animal not founnd')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'Stray animal not found' })
+    }
+    res.json(adoptedStrayAnimals)
+    console.log('Get all adopted animals:', adoptedStrayAnimals);
+    console.log('---------------------------------------------')
+  } catch (err) {
+    console.log('Error fetching adopted animals')
+    console.log('---------------------------------------------')
+    res.status(500).json({ message: err.message })
+  }
+}
+
 
 module.exports = {
   validate,
   getAllStrayAnimals,
   getStrayAnimalById,
+  getAllStrayAnimalDogs,
+  getAllStrayAnimalCats,
   createStrayAnimal,
   updateStrayAnimal,
   deleteStrayAnimal,
@@ -792,5 +864,6 @@ module.exports = {
   getComments,
   // updateComment,
   deleteComment,
+  getAdoptedStrayAnimals,
 
 }

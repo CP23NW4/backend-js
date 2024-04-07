@@ -3,13 +3,12 @@ const mongoose = require('mongoose')
 
 const commentSchema = new mongoose.Schema({
   post: {
-    saId: String,
-    saName: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'StrayAnimal',
   },
   user: {
-    userId: String,
-    username: String,
-    userPicture: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
   },
   comment: String,
   createdOn: {
