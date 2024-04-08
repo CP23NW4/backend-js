@@ -31,7 +31,17 @@ const validate = (req, res, next) => {
 //----------------- Get all stray animals --------------------------------------------------
 const getAllStrayAnimals = async (req, res) => {
   try {
-    const allStrayAnimals = await StrayAnimal.find().sort({ createdOn: -1 })
+
+    const allStrayAnimals = await StrayAnimal.find()
+    .sort({ createdOn: -1 })
+    .populate('owner', ' username userAddress')
+
+    if (!allStrayAnimals) {
+      console.log('Stray animal and Comment not found')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'Stray animal and Comment not found' })
+    }
+
     res.json(allStrayAnimals)
     console.log('All animals:', allStrayAnimals)
     console.log('---------------------------------------------')
@@ -46,6 +56,9 @@ const getAllStrayAnimals = async (req, res) => {
 const getStrayAnimalById = async (req, res) => {
   try {
     const strayAnimalbyId = await StrayAnimal.findById(req.params.saId)
+    .sort({ createdOn: -1 })
+    .populate('owner', ' username userAddress')
+
     if (!strayAnimalbyId) {
       console.log('Animal not founnd')
       console.log('---------------------------------------------')
@@ -64,7 +77,10 @@ const getStrayAnimalById = async (req, res) => {
 // ----------------- Get stray animal filter by type Dog ---------------------------------
 const getAllStrayAnimalDogs = async (req, res) => {
   try {
-    const allStrayDogs = await StrayAnimal.find({ type: 'Dog', status: 'Available' }).sort({ createdOn: -1 })
+    const allStrayDogs = await StrayAnimal.find({ type: 'Dog', status: 'Available' })
+    .sort({ createdOn: -1 })
+    .populate('owner', ' username userAddress')
+
     if (!allStrayDogs) {
       console.log('Animal not founnd')
       console.log('---------------------------------------------')
@@ -84,7 +100,10 @@ const getAllStrayAnimalDogs = async (req, res) => {
 // ----------------- Get stray animal filter by type Cat ---------------------------------
 const getAllStrayAnimalCats = async (req, res) => {
   try {
-    const allStrayCats = await StrayAnimal.find({ type: 'Cat', status: 'Available' }).sort({ createdOn: -1 })
+    const allStrayCats = await StrayAnimal.find({ type: 'Cat', status: 'Available' })
+    .sort({ createdOn: -1 })
+    .populate('owner', ' username userAddress')
+
     if (!allStrayCats) {
       console.log('Animal not founnd')
       console.log('---------------------------------------------')
@@ -127,6 +146,7 @@ const createStrayAnimal = async (req, res) => {
     // Call the validation function
     validate(req, res, async () => {
       const { name, type, gender, color, description } = req.body
+      const { userId } = req.user // Retrieve user data
 
       // Handle image upload to Azure Blob Storage
       // Determine the container based on the animal type
@@ -161,14 +181,7 @@ const createStrayAnimal = async (req, res) => {
         gender,
         color,
         description,
-        owner: {
-          ownerId: loggedInUser._id,
-          ownerUsername: loggedInUser.username,
-          ownerPicture: loggedInUser.userPicture,
-          phoneNumber: loggedInUser.phoneNumber,
-          role: loggedInUser.role,
-          ownerAddress: loggedInUser.userAddress,
-        },
+        owner: userId,
         createdOn: new Date(),
       })
 
@@ -813,7 +826,10 @@ const deleteComment = async (req, res) => {
 // ----------------- Get posts of stray animals filter by Unavailable (Adopted) --------------------------
 const getAdoptedStrayAnimals = async (req, res) => {
   try {
-    const adoptedStrayAnimals = await StrayAnimal.find({ status: 'Unavailable' }).sort({ createdOn: -1 })
+    const adoptedStrayAnimals = await StrayAnimal.find({ status: 'Unavailable' })
+    .sort({ createdOn: -1 })
+    .populate('owner', ' username userAddress')
+    
     if (!adoptedStrayAnimals) {
       console.log('Animal not founnd')
       console.log('---------------------------------------------')
