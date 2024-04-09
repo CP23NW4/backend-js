@@ -3,36 +3,44 @@ const mongoose = require('mongoose')
 
 const adoptionRequestSchema = new mongoose.Schema({
   owner: {
-    ownerId: String,
-    ownerUsername: String,
-    ownerPicture: String,
-    phoneNumber: String,
+    type: mongoose.Schema.Types.ObjectId,  // Reference to the owner's ID
+    ref: 'User'
+    // ownerId: String,
+    // ownerUsername: String,
+    // ownerPicture: String,
+    // phoneNumber: String,
   },
   animal: {
-    saId: String,
-    saName: String,
-    saPicture: String,
-    saType: String,
-    saGender: String,
-    saColor: String,
-    saDesc: String,
-    saStatus: String,
+    type: mongoose.Schema.Types.ObjectId,  // Reference to the animal's ID
+    ref: 'StrayAnimal'
+    // saId: String,
+    // saName: String,
+    // saPicture: String,
+    // saType: String,
+    // saGender: String,
+    // saColor: String,
+    // saDesc: String,
+    // saStatus: String,
   },
   requester: {
-    reqId: String,
-    reqUsername: String,
-    reqName: String,
-    reqAddress: {
-      PostCode: String,
-      TambonThaiShort: String,
-      DistrictThaiShort: String,
-      ProvinceThai: String,
-      homeAddress: String,
-    },
-    reqPhone: String,
-    reqIdCard: String,
-    reqPicture: String,
+    type: mongoose.Schema.Types.ObjectId,  // Reference to the owner's ID
+    ref: 'User'
+    // reqId: String,
+    // reqUsername: String,
+    // reqName: String,
+    // reqAddress: {
+    //   PostCode: String,
+    //   TambonThaiShort: String,
+    //   DistrictThaiShort: String,
+    //   ProvinceThai: String,
+    //   homeAddress: String,
+    // },
+    // reqPhone: String,
+    // reqIdCard: String,
+    // reqPicture: String,
   },
+  contact : String,
+  salary: Number,
   note: String,
   homePicture: {
     type: String,
@@ -40,7 +48,7 @@ const adoptionRequestSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['On Request', 'Accepted'],
+    enum: ['On Request', 'Accepted', 'Reject'],
     default: 'On Request',
   },
   createdOn: Date,

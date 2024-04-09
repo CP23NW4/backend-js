@@ -101,8 +101,16 @@ router.post(
   upload.single('homePicture'),
   body('note')
     .optional()
-    .isLength({ min: 1, max: 500 })
+    .isLength({ max: 500 })
     .withMessage('Note must be less than 500 characters'),
+  body('contact')
+    .optional()
+    .isLength({ max: 20 })
+    .withMessage('Contact must be less than 20 characters'),
+  body('salary')
+    .optional()
+    .isNumeric()
+    .withMessage('Salary should contain only numbers'),
   authenticateUser,
   strayAnimalController.requestAdoption
 )

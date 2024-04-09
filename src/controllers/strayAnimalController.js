@@ -335,12 +335,136 @@ const deleteStrayAnimal = async (req, res) => {
 }
 
 // ----------------- Post adoption request for a stray animal by ID -------------------------------------------
+// const requestAdoption = async (req, res) => {
+//   console.log('Request file:', req.file)
+//   console.log('---------------------------------------------')
+//   try {
+//     //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+//     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+
+//     // Check if picture size exceeds the limit
+//     if (req.file && req.file.size > 3 * 1024 * 1024) {
+//       console.log('Image size should be less than 3MB.')
+//       console.log('---------------------------------------------')
+//       return res
+//         .status(400)
+//         .json({ message: 'Image size should be less than 3MB.' })
+//     }
+
+//     // Call the validation function
+//     validate(req, res, async () => {
+//       // Retrieve stray animal data
+//       const dataInStrayAnimal = req.params.saId
+//       // Fetch user data from the database
+//       const dataInSaId = await StrayAnimal.findById(dataInStrayAnimal)
+
+//       if (!dataInSaId) {
+//         console.log('Animal not found')
+//         console.log('---------------------------------------------')
+//         return res.status(404).json({ message: 'Data stray animal not found' })
+//       }
+
+//       // Check if the logged-in user is the owner of the stray animal
+//       if (loggedInUser._id.toString() === dataInSaId.owner.ownerId) {
+//         console.log(
+//           'Owners cannot request adoption for their own stray animals'
+//         )
+//         console.log('---------------------------------------------')
+//         return res.status(403).json({
+//           message: 'Owners cannot request adoption for their own stray animals',
+//         })
+//       }
+
+//       const { note, homePicture } = req.body
+//       // const reqAddress = req.params.loggedInUser.userAddress
+
+//       // Upload pic to Blob
+//       const containerName = 'usershome'
+//       let imageUrl
+
+//       if (homePicture && isExternalUrl(homePicture)) {
+//         // If the picture is an external URL, use it directly
+//         imageUrl = req.body.homePicture
+//       } else if (req.file) {
+//         // Set the imageUrl as the Blob URL
+//         imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
+//       }
+
+//       // Create a new adoption request
+//       const adoptionRequest = new AdoptionRequest({
+//         owner: {
+//           ownerId: dataInSaId.owner.ownerId,
+//           ownerUsername: dataInSaId.owner.ownerUsername,
+//           ownerPicture: dataInSaId.owner.ownerPicture,
+//           phoneNumber: dataInSaId.owner.phoneNumber,
+//         },
+//         animal: {
+//           saId: dataInSaId._id,
+//           saName: dataInSaId.name,
+//           saPicture: dataInSaId.picture,
+//           saType: dataInSaId.type,
+//           saGender: dataInSaId.gender,
+//           saColor: dataInSaId.color,
+//           saDesc: dataInSaId.description,
+//           saStatus: dataInSaId.status,
+//         },
+//         requester: {
+//           reqId: loggedInUser._id,
+//           reqUsername: loggedInUser.username,
+//           reqName: loggedInUser.name,
+//           reqAddress: {
+//             PostCode: loggedInUser.userAddress.PostCode,
+//             TambonThaiShort: loggedInUser.userAddress.TambonThaiShort,
+//             DistrictThaiShort: loggedInUser.userAddress.DistrictThaiShort,
+//             ProvinceThai: loggedInUser.userAddress.ProvinceThai,
+//             homeAddress: loggedInUser.userAddress.homeAddress,
+//           },
+//           reqPhone: loggedInUser.phoneNumber,
+//           reqIdCard: loggedInUser.idCard,
+//           reqPicture: loggedInUser.userPicture,
+//         },
+//         note,
+//         homePicture,
+//         createdOn: new Date(),
+//       })
+
+//       // Conditionally include homePicture if imageUrl is defined
+//       if (imageUrl) {
+//         adoptionRequest.homePicture = imageUrl
+//       }
+
+//       // Create a new AdoptionRequest document
+//       const newAdoptionRequest = new AdoptionRequest(adoptionRequest)
+
+//       // Save the adoption request to the database
+//       await newAdoptionRequest.save()
+
+//       res.status(201).json({
+//         message: 'Adoption request submitted successfully:',
+//         adoptionRequest,
+//       })
+//       console.log(
+//         'Adoption request submitted successfully by:',
+//         loggedInUser.username,
+//         adoptionRequest
+//       )
+//       console.log('---------------------------------------------')
+//     })
+//   } catch (error) {
+//     console.error('Unable to submit adoption request', error)
+//     console.log('---------------------------------------------')
+//     res.status(500).json({ message: 'Unable to submit adoption request' })
+//   }
+// }
+
 const requestAdoption = async (req, res) => {
   console.log('Request file:', req.file)
   console.log('---------------------------------------------')
   try {
-    //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
-    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+    // Retrieve the logged-in user data
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req);
+    const { saId } = req.params
+    // const { userId } = req.user  // Logged-in user ID
 
     // Check if picture size exceeds the limit
     if (req.file && req.file.size > 3 * 1024 * 1024) {
@@ -353,80 +477,62 @@ const requestAdoption = async (req, res) => {
 
     // Call the validation function
     validate(req, res, async () => {
-      // Retrieve stray animal data
-      const dataInStrayAnimal = req.params.saId
-      // Fetch user data from the database
-      const dataInSaId = await StrayAnimal.findById(dataInStrayAnimal)
 
-      if (!dataInSaId) {
-        console.log('Animal not found')
-        console.log('---------------------------------------------')
-        return res.status(404).json({ message: 'Data stray animal not found' })
-      }
+    // Check if the stray animal exists
+    const strayAnimal = await StrayAnimal.findById(saId);
+    if (!strayAnimal) {
+      return res.status(404).json({ message: 'Stray animal not found' });
+    }
 
-      // Check if the logged-in user is the owner of the stray animal
-      if (loggedInUser._id.toString() === dataInSaId.owner.ownerId) {
-        console.log(
-          'Owners cannot request adoption for their own stray animals'
-        )
-        console.log('---------------------------------------------')
-        return res.status(403).json({
-          message: 'Owners cannot request adoption for their own stray animals',
-        })
-      }
+    // Check if the user is the owner of the stray animal
+    if (strayAnimal.owner.toString() === loggedInUser._id.toString()) {
+      return res.status(403).json({ message: 'Owners cannot request adoption for their own stray animals' });
+    }
 
-      const { note, homePicture } = req.body
-      // const reqAddress = req.params.loggedInUser.userAddress
+    // Check if the requester has already submitted an adoption request for this stray animal
+    const existingRequest = await AdoptionRequest.findOne({ requester: loggedInUser._id, animal: req.params.saId });
+    if (existingRequest) {
+      return res.status(400).json({ message: 'User can requesting to adopt a stray animal can submit only one request per post' });
+    }
 
-      // Upload pic to Blob
-      const containerName = 'usershome'
-      let imageUrl
+  //   // Check if the requester is the owner of the stray animal
+  //   if (userId._id.toString() === strayAnimal.owner) {
+  //     return res.status(403).json({ message: 'Owners cannot request adoption for their own stray animals' });
+  // }
 
-      if (homePicture && isExternalUrl(homePicture)) {
-        // If the picture is an external URL, use it directly
-        imageUrl = req.body.homePicture
-      } else if (req.file) {
-        // Set the imageUrl as the Blob URL
-        imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
-      }
+  //   // Check if the requester has already submitted an adoption request for this stray animal
+  //   const existingRequest = await AdoptionRequest.findOne({ animal: saId, requester: userId });
+  //   if (existingRequest) {
+  //     return res
+  //     .status(400)
+  //     .json({ message: "User can requesting to adopt a stray animal can submit only one request per post." });
+  //   }
 
-      // Create a new adoption request
-      const adoptionRequest = new AdoptionRequest({
-        owner: {
-          ownerId: dataInSaId.owner.ownerId,
-          ownerUsername: dataInSaId.owner.ownerUsername,
-          ownerPicture: dataInSaId.owner.ownerPicture,
-          phoneNumber: dataInSaId.owner.phoneNumber,
-        },
-        animal: {
-          saId: dataInSaId._id,
-          saName: dataInSaId.name,
-          saPicture: dataInSaId.picture,
-          saType: dataInSaId.type,
-          saGender: dataInSaId.gender,
-          saColor: dataInSaId.color,
-          saDesc: dataInSaId.description,
-          saStatus: dataInSaId.status,
-        },
-        requester: {
-          reqId: loggedInUser._id,
-          reqUsername: loggedInUser.username,
-          reqName: loggedInUser.name,
-          reqAddress: {
-            PostCode: loggedInUser.userAddress.PostCode,
-            TambonThaiShort: loggedInUser.userAddress.TambonThaiShort,
-            DistrictThaiShort: loggedInUser.userAddress.DistrictThaiShort,
-            ProvinceThai: loggedInUser.userAddress.ProvinceThai,
-            homeAddress: loggedInUser.userAddress.homeAddress,
-          },
-          reqPhone: loggedInUser.phoneNumber,
-          reqIdCard: loggedInUser.idCard,
-          reqPicture: loggedInUser.userPicture,
-        },
-        note,
-        homePicture,
-        createdOn: new Date(),
-      })
+    const { contact, salary, note, homePicture } = req.body
+
+    // Upload pic to Blob
+    const containerName = 'usershome'
+    let imageUrl
+
+    if (homePicture && isExternalUrl(homePicture)) {
+      // If the picture is an external URL, use it directly
+      imageUrl = req.body.homePicture
+    } else if (req.file) {
+      // Set the imageUrl as the Blob URL
+      imageUrl = await azureBlobService.uploadImageToBlob(req, containerName)
+    }
+
+    // Create the adoption request
+    const adoptionRequest = new AdoptionRequest({
+      owner: strayAnimal.owner,
+      animal: saId,
+      requester: loggedInUser._id,
+      contact,
+      salary,
+      note,
+      homePicture,
+      createdOn: new Date(),
+    });
 
       // Conditionally include homePicture if imageUrl is defined
       if (imageUrl) {
@@ -444,18 +550,18 @@ const requestAdoption = async (req, res) => {
         adoptionRequest,
       })
       console.log(
-        'Adoption request submitted successfully by:',
-        loggedInUser.username,
+        'Adoption request submitted successfully:',
         adoptionRequest
       )
-      console.log('---------------------------------------------')
-    })
+    console.log('---------------------------------------------')
+  })
   } catch (error) {
     console.error('Unable to submit adoption request', error)
     console.log('---------------------------------------------')
     res.status(500).json({ message: 'Unable to submit adoption request' })
   }
-}
+};
+
 
 // Helper function to check if a URL is external
 function isExternalUrl(url) {
