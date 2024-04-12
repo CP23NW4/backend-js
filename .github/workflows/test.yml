@@ -12,72 +12,78 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+
+    - name: Run Lighthouse Audits
+      run: |
+        npm install -g lighthouse
+        lighthouse https://capstone23.sit.kmutt.ac.th/nw4/ --output=json --output-path=./lighthouse-results.json
+
       
-    - name: Install OpenVPN
-      run: |
-        sudo apt update
-        sudo apt install -y openvpn openvpn-systemd-resolved
-    - name: Connect to VPN
-      uses: "kota65535/github-openvpn-connect-action@v2"
-      with:
-        config_file: .github/workflows/sitst-client.ovpn
-        username: ${{ secrets.OVPN_USERNAME }}
-        password: ${{ secrets.OVPN_PASSWORD }}
+    # - name: Install OpenVPN
+    #   run: |
+    #     sudo apt update
+    #     sudo apt install -y openvpn openvpn-systemd-resolved
+    # - name: Connect to VPN
+    #   uses: "kota65535/github-openvpn-connect-action@v2"
+    #   with:
+    #     config_file: .github/workflows/sitst-client.ovpn
+    #     username: ${{ secrets.OVPN_USERNAME }}
+    #     password: ${{ secrets.OVPN_PASSWORD }}
       
-    - name: Install SSH key
-      uses: webfactory/ssh-agent@v0.5.4
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    # - name: Install SSH key
+    #   uses: webfactory/ssh-agent@v0.5.4
+    #   with:
+    #     ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
         
-    - name: SSH into Azure VM and pull new code
-      run: |
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/backend-js && git pull"
+    # - name: SSH into Azure VM and pull new code
+    #   run: |
+    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/backend-js && git pull"
 
-    - name: Show Docker container status
-      run: |
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker ps -a"
+    # - name: Show Docker container status
+    #   run: |
+    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker ps -a"
 
-    - name: Install Docker
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          apt-transport-https \
-          ca-certificates \
-          curl \
-          gnupg-agent \
-          software-properties-common
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-        sudo apt-get update
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+    # - name: Install Docker
+    #   run: |
+    #     sudo apt-get update
+    #     sudo apt-get install -y \
+    #       apt-transport-https \
+    #       ca-certificates \
+    #       curl \
+    #       gnupg-agent \
+    #       software-properties-common
+    #     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    #     sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    #     sudo apt-get update
+    #     sudo apt-get install -y docker-ce docker-ce-cli containerd.io
         
-    - name: Build Docker image
-      run: |
-         ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/backend-js && docker build -t backend-image:latest ."
+    # - name: Build Docker image
+    #   run: |
+    #      ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "cd /home/sysadmin/backend-js && docker build -t backend-image:latest ."
 
-    - name: Create Docker tag
-      run: |
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker tag backend-image:latest punchiu/backend-image:latest"
+    # - name: Create Docker tag
+    #   run: |
+    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker tag backend-image:latest punchiu/backend-image:latest"
         
-    - name: Login to Docker Hub
-      run: echo '${{ secrets.DOCKERHUB_TOKEN }}' | docker login -u punchiu --password-stdin && echo "Logged in to Docker Hub successfully"
+    # - name: Login to Docker Hub
+    #   run: echo '${{ secrets.DOCKERHUB_TOKEN }}' | docker login -u punchiu --password-stdin && echo "Logged in to Docker Hub successfully"
         
-    - name: Push Docker image to Docker Hub
-      run: | 
-        ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker push punchiu/backend-image:latest"
+    # - name: Push Docker image to Docker Hub
+    #   run: | 
+    #     ssh -o StrictHostKeyChecking=no sysadmin@10.4.85.24 "docker push punchiu/backend-image:latest"
 
-    - name: Install Trivy
-      run: |
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+    # - name: Install Trivy
+    #   run: |
+    #     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
         
-    - name: Image Security Scan
-      run: |
-        trivy image punchiu/backend-image:latest
+    # - name: Image Security Scan
+    #   run: |
+    #     trivy image punchiu/backend-image:latest
 
-    - name: Run Dependency Security Scan
-      run: |
-        npm install # Ensure dependencies are installed
-        npm audit # Run dependency security scan
+    # - name: Run Dependency Security Scan
+    #   run: |
+    #     npm install # Ensure dependencies are installed
+    #     npm audit # Run dependency security scan
 
     # - name: Stop and remove existing containers
     #   run: |
