@@ -57,7 +57,7 @@ const getStrayAnimalById = async (req, res) => {
   try {
     const strayAnimalbyId = await StrayAnimal.findById(req.params.saId)
     .sort({ createdOn: -1 })
-    .populate('owner', ' username userAddress')
+    .populate('owner', ' username userAddress userPicture')
 
     if (!strayAnimalbyId) {
       console.log('Animal not founnd')
@@ -897,7 +897,8 @@ const deleteComment = async (req, res) => {
   console.log('Deleting a comment')
   try {
     const { commentId } = req.params
-    const loggedInUserId = req.user.userId 
+    // const loggedInUserId = req.user.userId 
+    const userId = req.user.userId // Retrieve the user ID from the request
 
     // Find the comment by ID
     const comment = await Comment.findById(commentId)
@@ -909,11 +910,19 @@ const deleteComment = async (req, res) => {
       return res.status(404).json({ message: 'Comment not found' })
     }
 
-    // Check if the logged-in user is the owner of the comment
-    if (comment.user.userId !== loggedInUserId) {
-      console.log('Unauthorized: Only the owner can delete the comment')
-      console.log('---------------------------------------------')
-      return res.status(403).json({ message: 'Unauthorized: Only the owner can delete the comment' })
+    // // Check if the logged-in user is the owner of the comment
+    // if (comment.user.userId !== loggedInUserId) {
+    //   console.log('Unauthorized: Only the owner can delete the comment')
+    //   console.log('---------------------------------------------')
+    //   return res.status(403).json({ message: 'Unauthorized: Only the owner can delete the comment' })
+    // }
+
+    
+    // Check if the authenticated user is the owner of the comment
+    if (comment.user.toString() !== userId) {
+      console.log('Unauthorized: Only the owner can delete the comment');
+      console.log('---------------------------------------------');
+      return res.status(403).json({ message: 'Unauthorized: Only the owner can delete the comment' });
     }
 
     // Delete the comment
