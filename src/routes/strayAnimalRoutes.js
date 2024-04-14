@@ -151,8 +151,8 @@ router.put(
   .isLength({ max: 10 })
   .withMessage('Status must be less than 10 characters')
   .optional()
-  .isIn(['On Request', 'Accepted'])
-  .withMessage('Status must be On Request or Accepted'), 
+  .isIn(['On Request', 'Accepted', 'Rejected'])
+  .withMessage('Status must be On Request, Accepted or Rejected'), 
   authenticateUser, 
   strayAnimalController.updateAdoptionRequestStatus)
 

@@ -635,6 +635,86 @@ const updateAdoptionRequestStatus = async (req, res) => {
   }
 }
 
+// const updateAdoptionRequestStatus = async (req, res) => {
+//   try {
+//     // Retrieve the logged-in user's data
+//     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+//     const loggedInUserRole = loggedInUser.role
+
+//     // Call the validation function
+//     validate(req, res, async () => {
+
+//     // Fetch the adoption request by ID
+//     const adoptionRequest = await AdoptionRequest.findById(req.params.reqId)
+
+//     if (!adoptionRequest) {
+//       return res.status(404).json({ message: 'Adoption request not found' })
+//     }
+
+//     // Check if the logged-in user has permission to edit the status
+//     if (loggedInUserRole !== 'admin' && adoptionRequest.owner.ownerId !== loggedInUser._id.toString()) {
+//       return res.status(403).json({ message: 'You are not authorized to edit the status of this adoption request' })
+//     }
+
+//     // Update the status of the adoption request
+//     const newStatus = req.body.status
+//     adoptionRequest.status = newStatus
+//     adoptionRequest.updatedOn = new Date()
+//     await adoptionRequest.save()
+
+//     // Fetch the associated stray animal post
+//     const strayAnimal = await StrayAnimal.findById(adoptionRequest.animal)
+
+//     if (!strayAnimal) {
+//       return res.status(404).json({ message: 'Stray animal not found' })
+//     }
+
+//     // Change the status of the stray animal post based on the adoption request status
+//     if (newStatus === 'On Request') {
+//       if (strayAnimal.status === 'Unavailable') {
+//         strayAnimal.status = 'Reject'
+//       } else if (strayAnimal.status === 'Available') {
+//         strayAnimal.status = 'On Request'
+//       }
+//     } else if (newStatus === 'Accepted') {
+//       if (strayAnimal.status === 'Unavailable') {
+//         strayAnimal.status = 'Accepted'
+//         // Update the statuses of other adoption requests for the same stray animal
+//         await AdoptionRequest.updateMany(
+//           { animal: adoptionRequest.animal, _id: { $ne: adoptionRequest._id } },
+//           { status: 'Rejected' }
+//         );
+//       }
+//     }
+
+//     // Save the updated stray animal status
+//     await strayAnimal.save();
+
+//     //  Respond with only required fields
+//     const updateStatus = {
+//       status: adoptionRequest.status,
+//       _id: adoptionRequest._id,
+//       updatedOn: adoptionRequest.updatedOn,
+//     }
+
+//     res.json({ message: 'Updated adoption request status:', updateStatus })
+//     console.log('Updated adoption request status successfully by:', loggedInUser.username)
+//     console.log('---------------------------------------------');
+//     console.log('Updated adoption request status successfully:', adoptionRequest)
+
+//     // Additionally, provide response to the status update of the stray animal
+//     res.json({
+//       message: 'Updated stray animal status:',
+//       strayAnimalStatus: strayAnimal.status,
+//     })
+//   })
+//   } catch (error) {
+//     console.error('Error updating adoption request status:', error)
+//     res.status(500).json({ message: 'Error updating adoption request status' })
+//   }
+// }
+
+
 // ----------------- GET animal post by Owner -------------------------------------------
 async function getAnimalPostsByOwner(ownerId) {
   try {
@@ -713,7 +793,7 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
 
     // Format the data for response
     const formattedAdoptionRequests = adoptionRequests.map((request) => {
-      const { animal, status } = request;
+      const { animal, status } = request
       const { name, picture, type, gender, color, description, createdOn } = animal
       const ownerUsername = animal.owner ? animal.owner.username : null
 
@@ -764,26 +844,15 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
 // ----------------- Get adoption requests filter by ID stray animal post ------------------------------
 const getAdoptionRequestsBysaId = async (req, res) => {
   try {
-    // Retrieve the owner's post ID from the request parameters
-    // const { saId } = req.params
-    const saId = req.params.saId
-
-    // Retrieve the logged-in user's ID
-    const loggedInUserId = req.user.userId
+    const saId = req.params.saId // Retrieve the owner's post ID from the request parameters
+    const loggedInUserId = req.user.userId // Retrieve the logged-in user's ID
 
     // Query the StrayAnimal collection to find the owner's ID associated with the specified post ID
     const strayAnimal = await StrayAnimal.findById(saId)
     if (!strayAnimal) {
       return res.status(404).json({ message: 'Stray animal not found' })
     }
-
-    const ownerId = strayAnimal.owner.ownerId
-
-    // // Validate that the logged-in user's ID matches the owner's ID
-    // if (loggedInUserId !== ownerId) {
-    //   return res.status(403).json({ message: 'You are not authorized to access adoption requests for this stray animal post' })
-    // }
-    
+ 
     // Check if the logged-in user is the owner of the stray animal
     if (strayAnimal.owner.toString() !== loggedInUserId) {
       return res.status(403).json({ message: 'You are not authorized to view adoption requests for this stray animal' });
@@ -792,22 +861,68 @@ const getAdoptionRequestsBysaId = async (req, res) => {
     // If validation passes, proceed to fetch adoption requests
     // const adoptionRequests = await AdoptionRequest.find({ 'animal.saId': saId }).sort({ createdOn: -1 })
 
-    // Retrieve adoption requests for the specified stray animal and populate the animal and owner fields
+    // // Retrieve adoption requests for the specified stray animal and populate the animal and owner fields
+    // const adoptionRequests = await AdoptionRequest.find({ animal: saId })
+    //   .sort({ createdOn: -1 })
+    //   .populate({
+    //     path: 'animal',
+    //     select: 'name picture type gender color description status createdOn owner', // Populate the desired fields from the stray animal
+    //     populate: {
+    //       path: 'owner',
+    //       select: 'username', // Populate the username of the owner
+    //     },
+    //     populate: {
+    //       path: 'requester',
+    //       select: 'username name userAddress phoneNumber userPicture', // Populate the username of the owner
+    //     },
+    //   })
+
+    // Find adoption requests for the specified stray animal ID
     const adoptionRequests = await AdoptionRequest.find({ animal: saId })
-      .sort({ createdOn: -1 })
-      .populate({
-        path: 'animal',
-        select: 'name picture type gender color description status createdOn owner', // Populate the desired fields from the stray animal
-        populate: {
-          path: 'owner',
-          select: 'username', // Populate the username of the owner
-        },
-      })
+    .populate('requester', ' _id username name userAddress phoneNumber userPicture') // Populate requester field with specific fields
+    // .populate('animal') // Optional: populate animal field if needed
+    // .populate('owner') // Optional: populate owner field if needed
+    .sort({ createdOn: -1 })
+      // .sort({ createdOn: -1 })
+      // .populate({
+      //   // path: 'animal', // Populate the animal field
+      //   // select: 'name picture type gender color description status createdOn owner', // Fields to include
+      //   populate: {
+      //     path: 'owner', // Populate the owner field
+      //     select: 'username', // Only include the owner's username
+      //   },
+      // })
+      // .populate({
+      //   path: 'requester', // Populate the requester field
+      //   select: 'username name userAddress phoneNumber userPicture', // Fields to include
+      // });
+
+        // Format the response to include the desired fields
+        const formattedResponse = adoptionRequests.map((request) => ({
+          requester: {
+            reqId: request.requester._id,
+            reqUsername: request.requester.username,
+            reqName: request.requester.name,
+            reqAddress: request.requester.userAddress,
+            reqPhone: request.requester.phoneNumber,
+            reqPicture: request.requester.userPicture,
+          },
+            contact: request.contact,
+            salary: request.salary,
+            note: request.note,
+            homePicture: request.homePicture,
+            status: request.status,
+            createdOn: request.createdOn,
+        }))
+    
+        res.json(formattedResponse)
+        console.log('Get adoption requests for stray animal post:', formattedResponse)
+        console.log('---------------------------------------------')
 
     // Return the adoption requests for the specified stray animal post
-    res.json(adoptionRequests)
-    console.log('Get adoption requests for stray animal post:', adoptionRequests)
-    console.log('---------------------------------------------')
+    // res.json(adoptionRequests)
+    // console.log('Get adoption requests for stray animal post:', adoptionRequests)
+    // console.log('---------------------------------------------')
   } catch (error) {
     console.error('Error retrieving adoption requests for stray animal post:', error)
     res.status(500).json({ message: 'Error retrieving adoption requests' })
@@ -855,22 +970,65 @@ const getAdoptionRequestByIdForSender = async (req, res) => {
     const loggedInUserId = req.user.userId // Extract ID of the logged-in user
 
     // Fetch the adoption request from the database
-    const adoptionRequest = await AdoptionRequest.findById(reqId)
+    // const adoptionRequest = await AdoptionRequest.findById(reqId)
 
-    // Check if the adoption request exists
+    // Find the adoption request by its ID and populate related data
+    const adoptionRequest = await AdoptionRequest.findById(reqId)
+      .populate('animal') // Populate the stray animal details
+      .populate('requester', 'username name userAddress phoneNumber userPicture') // Populate requester details
+      .populate('owner', 'username'); // Populate owner details
+
     if (!adoptionRequest) {
-      return res.status(404).json({ message: 'Adoption request not found' })
+      return res.status(404).json({ message: 'Adoption request not found' });
     }
 
+    // Prepare the response object
+    const adoptionRequests = {
+      // Stray animal information
+      ownerUsername: adoptionRequest.owner.username,
+      animal: {
+        name: adoptionRequest.animal.name,
+        picture: adoptionRequest.animal.picture,
+        type: adoptionRequest.animal.type,
+        gender: adoptionRequest.animal.gender,
+        color: adoptionRequest.animal.color,
+        description: adoptionRequest.animal.description,
+        status: adoptionRequest.animal.status,
+        createdOn: adoptionRequest.animal.createdOn,
+      },
+      // Requester information
+      requester: {
+        reqId: adoptionRequest.requester._id,
+        reqUsername: adoptionRequest.requester.username,
+        reqName: adoptionRequest.requester.name,
+        reqAddress: adoptionRequest.requester.userAddress,
+        reqPhone: adoptionRequest.requester.phoneNumber,
+        reqPicture: adoptionRequest.requester.userPicture,
+        contact: adoptionRequest.contact,
+        salary: adoptionRequest.salary,
+        note: adoptionRequest.note,
+        homePicture: adoptionRequest.homePicture,
+        status: adoptionRequest.status,
+        createdOn: adoptionRequest.createdOn,
+      }
+    };
+
+    res.status(200).json(adoptionRequests)
+
+    // // Check if the logged-in user is the requester of the adoption request
+    // if (adoptionRequest.requester.reqId.toString() !== loggedInUserId) {
+    //   return res.status(403).json({ message: 'You are not authorized to view this adoption request' })
+    // }
+
     // Check if the logged-in user is the requester of the adoption request
-    if (adoptionRequest.requester.reqId.toString() !== loggedInUserId) {
+    if (adoptionRequest.requester.toString() !== loggedInUserId) {
       return res.status(403).json({ message: 'You are not authorized to view this adoption request' })
     }
 
     // Return the adoption request
-    res.json(adoptionRequest)
-    console.log('Get adoption request by ID for sender:', adoptionRequest)
-    console.log('---------------------------------------------')
+    // res.json(adoptionRequest)
+    // console.log('Get adoption request by ID for sender:', adoptionRequest)
+    // console.log('---------------------------------------------')
   } catch (error) {
     console.error('Error retrieving adoption request:', error)
     res.status(500).json({ message: 'Error retrieving adoption request' })
