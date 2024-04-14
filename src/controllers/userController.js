@@ -347,7 +347,7 @@ async function loginUser(req, res) {
 
     // Create token payload
     const tokenPayload = {
-      // userId: user._id.toString(),
+      userId: user._id.toString(),
       username: user.username,
       email: user.email,
       // phoneNumber: user.phoneNumber,
