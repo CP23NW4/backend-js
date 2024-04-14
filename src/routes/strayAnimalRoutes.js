@@ -129,12 +129,12 @@ router.get(
   strayAnimalController.getAdoptionRequestsByLoggedInUser
 )
 
-// ----------------- GET adoption requests by owners (Receiver) ------------
-router.get(
-  '/receiver/reqAdoption',
-  authenticateUser,
-  strayAnimalController.getOwnersAdoptionRequestsByLoggedInUser
-)
+// // ----------------- GET adoption requests by owners (Receiver) ------------
+// router.get(
+//   '/receiver/reqAdoption',
+//   authenticateUser,
+//   strayAnimalController.getOwnersAdoptionRequestsByLoggedInUser
+// )
 
 // ----------------- Get adoption requests filter by ID stray animal post ---------------------
 router.get(
@@ -157,12 +157,12 @@ router.put(
   strayAnimalController.updateAdoptionRequestStatus)
 
 
-// ----------------- GET adoption requests form (Receiver) by ID --------------------------
-router.get(
-  '/receiver/reqAdoption/:reqId',
-  authenticateUser,
-  strayAnimalController.getAdoptionRequestById
-)
+// // ----------------- GET adoption requests form (Receiver) by ID --------------------------
+// router.get(
+//   '/receiver/reqAdoption/:reqId',
+//   authenticateUser,
+//   strayAnimalController.getAdoptionRequestById
+// )
 
 // ----------------- GET adoption requests form (Sender) by ID --------------------------
 router.get(
