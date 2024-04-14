@@ -31,10 +31,10 @@ const validate = (req, res, next) => {
 //----------------- Get all stray animals --------------------------------------------------
 const getAllStrayAnimals = async (req, res) => {
   try {
-
-    const allStrayAnimals = await StrayAnimal.find()
-    .sort({ createdOn: -1 })
-    .populate('owner', ' username userAddress')
+    // Retrieve all stray animals with status 'Available' sorted by 'createdOn' in descending order
+    const allStrayAnimals = await StrayAnimal.find({ status: 'Available' })
+      .sort({ createdOn: -1 })
+      .populate('owner', 'username userAddress')
 
     if (!allStrayAnimals) {
       console.log('Stray animal and Comment not found')
@@ -114,6 +114,28 @@ const getAllStrayAnimalCats = async (req, res) => {
     console.log('---------------------------------------------')
   } catch (err) {
     console.log('Can not get animals')
+    console.log('---------------------------------------------')
+    res.status(500).json({ message: err.message })
+  }
+}
+
+// ----------------- Get posts of stray animals filter by Unavailable (Adopted) --------------------------
+const getAdoptedStrayAnimals = async (req, res) => {
+  try {
+    const adoptedStrayAnimals = await StrayAnimal.find({ status: 'Unavailable' })
+    .sort({ createdOn: -1 })
+    .populate('owner', ' username userAddress')
+    
+    if (!adoptedStrayAnimals) {
+      console.log('Animal not founnd')
+      console.log('---------------------------------------------')
+      return res.status(404).json({ message: 'Stray animal not found' })
+    }
+    res.json(adoptedStrayAnimals)
+    console.log('Get all adopted animals:', adoptedStrayAnimals);
+    console.log('---------------------------------------------')
+  } catch (err) {
+    console.log('Error fetching adopted animals')
     console.log('---------------------------------------------')
     res.status(500).json({ message: err.message })
   }
@@ -938,27 +960,7 @@ const deleteComment = async (req, res) => {
   }
 }
 
-// ----------------- Get posts of stray animals filter by Unavailable (Adopted) --------------------------
-const getAdoptedStrayAnimals = async (req, res) => {
-  try {
-    const adoptedStrayAnimals = await StrayAnimal.find({ status: 'Unavailable' })
-    .sort({ createdOn: -1 })
-    .populate('owner', ' username userAddress')
-    
-    if (!adoptedStrayAnimals) {
-      console.log('Animal not founnd')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'Stray animal not found' })
-    }
-    res.json(adoptedStrayAnimals)
-    console.log('Get all adopted animals:', adoptedStrayAnimals);
-    console.log('---------------------------------------------')
-  } catch (err) {
-    console.log('Error fetching adopted animals')
-    console.log('---------------------------------------------')
-    res.status(500).json({ message: err.message })
-  }
-}
+
 
 
 module.exports = {
@@ -967,6 +969,7 @@ module.exports = {
   getStrayAnimalById,
   getAllStrayAnimalDogs,
   getAllStrayAnimalCats,
+  getAdoptedStrayAnimals,
   createStrayAnimal,
   updateStrayAnimal,
   deleteStrayAnimal,
@@ -982,6 +985,6 @@ module.exports = {
   getComments,
   // updateComment,
   deleteComment,
-  getAdoptedStrayAnimals,
+
 
 }
