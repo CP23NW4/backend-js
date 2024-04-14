@@ -347,14 +347,14 @@ async function loginUser(req, res) {
 
     // Create token payload
     const tokenPayload = {
-      userId: user._id.toString(),
+      // userId: user._id.toString(),
       username: user.username,
       email: user.email,
-      phoneNumber: user.phoneNumber,
-      DOB: user.DOB,
+      // phoneNumber: user.phoneNumber,
+      // DOB: user.DOB,
       role: user.role,
-      userAddress: user.userAddress,
-      userPicture: user.userPicture,
+      // userAddress: user.userAddress,
+      // userPicture: user.userPicture,
     }
 
     const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '1h' })
