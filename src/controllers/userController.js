@@ -383,31 +383,31 @@ async function getAllUsers(req, res) {
   }
 }
 
-// ----------------- Get user by ID -------------------------------------------
-async function getUserById(req, res) {
-  try {
-    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
-    await loggedInUserService.getLoggedInUserDataNoRes(req)
+// // ----------------- Get user by ID -------------------------------------------
+// async function getUserById(req, res) {
+//   try {
+//     // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
+//     await loggedInUserService.getLoggedInUserDataNoRes(req)
 
-    // Fetch user data from the database using the provided userId
-    const user = await User.findById(req.params.userId)
+//     // Fetch user data from the database using the provided userId
+//     const user = await User.findById(req.params.userId)
 
-    if (!user) {
-      console.log('User not found')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'User not found' })
-    }
+//     if (!user) {
+//       console.log('User not found')
+//       console.log('---------------------------------------------')
+//       return res.status(404).json({ message: 'User not found' })
+//     }
 
-    // Send the user data in the response
-    res.json({ user })
-    console.log('Requested user:', user)
-    console.log('---------------------------------------------')
-  } catch (err) {
-    console.log(err)
-    console.log('---------------------------------------------')
-    res.status(500).json({ message: err.message })
-  }
-}
+//     // Send the user data in the response
+//     res.json({ user })
+//     console.log('Requested user:', user)
+//     console.log('---------------------------------------------')
+//   } catch (err) {
+//     console.log(err)
+//     console.log('---------------------------------------------')
+//     res.status(500).json({ message: err.message })
+//   }
+// }
 
 // ----------------- Delete user by ID (Admin only) -----------------------------------------
 async function deleteUserById(req, res) {
@@ -649,7 +649,7 @@ module.exports = {
   registerUser,
   loginUser,
   getAllUsers,
-  getUserById,
+  // getUserById,
   deleteUserById,
   editUserById,
   // getLoggedInUserData,

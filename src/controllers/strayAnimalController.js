@@ -893,6 +893,7 @@ const getAdoptionRequestsBysaId = async (req, res) => {
 
         // Format the response to include the desired fields
         const formattedResponse = adoptionRequests.map((request) => ({
+          _id: request._id,
           animal: {
             name: request.animal.name,
             status: request.animal.status,
