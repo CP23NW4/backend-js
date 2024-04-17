@@ -230,14 +230,13 @@ function isExternalUrl(url) {
   return /^(https?:\/\/|www\.)\S+$/.test(url)
 }
 
-//----------------- Update a stray animal by ID --------------------------------------------
+// ----------------- Update a stray animal by ID --------------------------------------------
 const updateStrayAnimal = async (req, res) => {
   try {
     //Call getLoggedInUserDataNoRes to retrieve logged-in user's data
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
     const loggedInUserRole = loggedInUser.role
-    const loggedInUserId = loggedInUser._id.toString()
 
     // Call the validation function
     validate(req, res, async () => {
@@ -249,14 +248,14 @@ const updateStrayAnimal = async (req, res) => {
         return res.status(404).json({ message: 'Stray animal not found' })
       }
 
-      const existingStrayAnimalOwnerId = existingStrayAnimal.owner.ownerId
+      const existingStrayAnimalOwnerId = existingStrayAnimal.owner
       console.log('Animal owner:', existingStrayAnimalOwnerId)
       console.log('---------------------------------------------')
 
       // Check if the authenticated user is an admin
       if (
         loggedInUserRole !== 'admin' &&
-        existingStrayAnimalOwnerId !== loggedInUserId
+        existingStrayAnimal.owner.toString() !== loggedInUser._id.toString()
       ) {
         console.log('You are not authorized to edit this animal')
         console.log('---------------------------------------------')
@@ -271,9 +270,9 @@ const updateStrayAnimal = async (req, res) => {
       if (req.body.name) {
         updatedFields.name = req.body.name
       }
-      if (req.body.picture) {
-        updatedFields.picture = req.body.picture
-      }
+      // if (req.body.picture) {
+      //   updatedFields.picture = req.body.picture
+      // }
       if (req.body.gender) {
         updatedFields.gender = req.body.gender
       }
@@ -608,7 +607,10 @@ const updateAdoptionRequestStatus = async (req, res) => {
     }
 
     // Check if the logged-in user has permission to edit the status
-    if (loggedInUserRole !== 'admin' && adoptionRequest.owner.ownerId !== loggedInUser._id.toString()) {
+    // if (loggedInUserRole !== 'admin' && adoptionRequest.owner.ownerId !== loggedInUser._id.toString()) {
+    //   return res.status(403).json({ message: 'You are not authorized to edit the status of this adoption request' })
+    // }
+    if (adoptionRequest.owner.toString() !== loggedInUser._id.toString()) {
       return res.status(403).json({ message: 'You are not authorized to edit the status of this adoption request' })
     }
 
@@ -979,7 +981,7 @@ const getAdoptionRequestByIdForSender = async (req, res) => {
       .populate('owner', 'username'); // Populate owner details
 
     if (!adoptionRequest) {
-      return res.status(404).json({ message: 'Adoption request not found' });
+      return res.status(404).json({ message: 'Adoption request not found' })
     }
 
     // Prepare the response object
@@ -1011,21 +1013,24 @@ const getAdoptionRequestByIdForSender = async (req, res) => {
         status: adoptionRequest.status,
         createdOn: adoptionRequest.createdOn,
       }
-    };
+    }
 
-    res.status(200).json(adoptionRequests)
+    // res.status(200).json(adoptionRequests)
 
     // // Check if the logged-in user is the requester of the adoption request
     // if (adoptionRequest.requester.reqId.toString() !== loggedInUserId) {
     //   return res.status(403).json({ message: 'You are not authorized to view this adoption request' })
     // }
 
-    // Check if the logged-in user is the requester of the adoption request
-    if (adoptionRequest.requester.toString() !== loggedInUserId) {
-      return res.status(403).json({ message: 'You are not authorized to view this adoption request' })
-    }
+    // // Check if the logged-in user is the requester of the adoption request
+    // if (adoptionRequest.requester.toString() !== loggedInUserId) {
+    //   return res.status(403).json({ message: 'You are not authorized to view this adoption request' })
+    // }
 
     // Return the adoption request
+    res.json(adoptionRequests)
+    console.log('Get adoption request by ID for sender:', adoptionRequests)
+    console.log('---------------------------------------------')
     // res.json(adoptionRequest)
     // console.log('Get adoption request by ID for sender:', adoptionRequest)
     // console.log('---------------------------------------------')
@@ -1169,9 +1174,9 @@ const deleteComment = async (req, res) => {
     
     // Check if the authenticated user is the owner of the comment
     if (comment.user.toString() !== userId) {
-      console.log('Unauthorized: Only the owner can delete the comment');
-      console.log('---------------------------------------------');
-      return res.status(403).json({ message: 'Unauthorized: Only the owner can delete the comment' });
+      console.log('Unauthorized: Only the owner can delete the comment')
+      console.log('---------------------------------------------')
+      return res.status(403).json({ message: 'Unauthorized: Only the owner can delete the comment' })
     }
 
     // Delete the comment

@@ -68,7 +68,6 @@ router.put(
       .optional()
       .isLength({ min: 1, max: 20 })
       .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/),
-    body('picture').optional().notEmpty(),
     body('type').optional().isIn(['Dog', 'Cat']).isLength({ max: 5 }),
     body('gender').optional().isIn(['Male', 'Female']).isLength({ max: 6 }),
     body('color')
@@ -77,9 +76,9 @@ router.put(
       .custom((value) => !/\d/.test(value)),
     body('description').optional().isLength({ max: 500 }),
     body('status')
+      .optional()
       .isLength({ max: 11 })
       .withMessage('Status must be less than 11 characters')
-      .optional()
       .isIn(['Available', 'Unavailable'])
       .withMessage('Status must be Available or Unavailable'),
   ],
