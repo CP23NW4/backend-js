@@ -637,84 +637,153 @@ function isExternalUrl(url) {
 //   }
 // }
 
+// const updateAdoptionRequestStatus = async (req, res) => {
+//   try {
+//     // Retrieve the logged-in user's data
+//     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
+//     const loggedInUserRole = loggedInUser.role
+
+//     // Call the validation function
+//     validate(req, res, async () => {
+
+//     // Fetch the adoption request by ID
+//     const adoptionRequest = await AdoptionRequest.findById(req.params.reqId)
+
+//     if (!adoptionRequest) {
+//       return res.status(404).json({ message: 'Adoption request not found' })
+//     }
+
+//     // Check if the logged-in user has permission to edit the status
+//     if (adoptionRequest.owner.toString() !== loggedInUser._id.toString()) {
+//       return res.status(403).json({ message: 'You are not authorized to edit the status of this adoption request' })
+//     }
+
+//     // Update the status of the adoption request
+//     const newStatus = req.body.status
+//     adoptionRequest.status = newStatus
+//     adoptionRequest.updatedOn = new Date()
+//     await adoptionRequest.save()
+
+//     // Fetch the associated stray animal post
+//     const strayAnimal = await StrayAnimal.findById(adoptionRequest.animal)
+
+//     if (!strayAnimal) {
+//       return res.status(404).json({ message: 'Stray animal not found' })
+//     }
+
+//     // Change the status of the stray animal post based on the adoption request status
+//     if (newStatus === 'On Request') {
+//       if (strayAnimal.status === 'Unavailable') {
+//         strayAnimal.status = 'Reject'
+//       } else if (strayAnimal.status === 'Available') {
+//         strayAnimal.status = 'On Request'
+//       }
+//     } else if (newStatus === 'Accepted') {
+//       if (strayAnimal.status === 'Unavailable') {
+//         strayAnimal.status = 'Accepted'
+//         // Update the statuses of other adoption requests for the same stray animal
+//         await AdoptionRequest.updateMany(
+//           { animal: adoptionRequest.animal, _id: { $ne: adoptionRequest._id } },
+//           { status: 'Rejected' }
+//         );
+//       }
+//     }
+
+//     // Save the updated stray animal status
+//     await strayAnimal.save();
+
+//     //  Respond with only required fields
+//     const updateStatus = {
+//       status: adoptionRequest.status,
+//       _id: adoptionRequest._id,
+//       updatedOn: adoptionRequest.updatedOn,
+//     }
+
+//     res.json({ message: 'Updated adoption request status:', updateStatus })
+//     console.log('Updated adoption request status successfully by:', loggedInUser.username)
+//     console.log('---------------------------------------------');
+//     console.log('Updated adoption request status successfully:', adoptionRequest)
+
+//     // Additionally, provide response to the status update of the stray animal
+//     res.json({
+//       message: 'Updated stray animal status:',
+//       strayAnimalStatus: strayAnimal.status,
+//     })
+//   })
+//   } catch (error) {
+//     console.error('Error updating adoption request status:', error)
+//     res.status(500).json({ message: 'Error updating adoption request status' })
+//   }
+// }
+
 const updateAdoptionRequestStatus = async (req, res) => {
   try {
     // Retrieve the logged-in user's data
-    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
-    const loggedInUserRole = loggedInUser.role
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req);
+    const loggedInUserRole = loggedInUser.role;
 
     // Call the validation function
     validate(req, res, async () => {
+      // Fetch the adoption request by ID
+      const adoptionRequest = await AdoptionRequest.findById(req.params.reqId);
 
-    // Fetch the adoption request by ID
-    const adoptionRequest = await AdoptionRequest.findById(req.params.reqId)
-
-    if (!adoptionRequest) {
-      return res.status(404).json({ message: 'Adoption request not found' })
-    }
-
-    // Check if the logged-in user has permission to edit the status
-    if (adoptionRequest.owner.toString() !== loggedInUser._id.toString()) {
-      return res.status(403).json({ message: 'You are not authorized to edit the status of this adoption request' })
-    }
-
-    // Update the status of the adoption request
-    const newStatus = req.body.status
-    adoptionRequest.status = newStatus
-    adoptionRequest.updatedOn = new Date()
-    await adoptionRequest.save()
-
-    // Fetch the associated stray animal post
-    const strayAnimal = await StrayAnimal.findById(adoptionRequest.animal)
-
-    if (!strayAnimal) {
-      return res.status(404).json({ message: 'Stray animal not found' })
-    }
-
-    // Change the status of the stray animal post based on the adoption request status
-    if (newStatus === 'On Request') {
-      if (strayAnimal.status === 'Unavailable') {
-        strayAnimal.status = 'Reject'
-      } else if (strayAnimal.status === 'Available') {
-        strayAnimal.status = 'On Request'
+      if (!adoptionRequest) {
+        return res.status(404).json({ message: 'Adoption request not found' });
       }
-    } else if (newStatus === 'Accepted') {
-      if (strayAnimal.status === 'Unavailable') {
-        strayAnimal.status = 'Accepted'
-        // Update the statuses of other adoption requests for the same stray animal
-        await AdoptionRequest.updateMany(
-          { animal: adoptionRequest.animal, _id: { $ne: adoptionRequest._id } },
-          { status: 'Rejected' }
-        );
+
+      // Check if the logged-in user has permission to edit the status
+      if (
+        adoptionRequest.owner.toString() !== loggedInUser._id.toString()
+      ) {
+        return res.status(403).json({ message: 'You are not authorized to edit the status of this adoption request' });
       }
-    }
 
-    // Save the updated stray animal status
-    await strayAnimal.save();
+      // Update the status of the adoption request
+      const newStatus = req.body.status;
+      adoptionRequest.status = newStatus;
+      adoptionRequest.updatedOn = new Date();
+      await adoptionRequest.save();
 
-    //  Respond with only required fields
-    const updateStatus = {
-      status: adoptionRequest.status,
-      _id: adoptionRequest._id,
-      updatedOn: adoptionRequest.updatedOn,
-    }
+      if (newStatus === 'Accepted') {
+        // If the adoption request status is "Accepted," update the stray animal status to "Unavailable"
+        const strayAnimal = await StrayAnimal.findById(adoptionRequest.animal);
+        if (strayAnimal) {
+          strayAnimal.status = 'Unavailable';
+          await strayAnimal.save();
 
-    res.json({ message: 'Updated adoption request status:', updateStatus })
-    console.log('Updated adoption request status successfully by:', loggedInUser.username)
-    console.log('---------------------------------------------');
-    console.log('Updated adoption request status successfully:', adoptionRequest)
+          // Reject all other adoption requests for the same stray animal
+          await AdoptionRequest.updateMany(
+            {
+              animal: adoptionRequest.animal,
+              _id: { $ne: adoptionRequest._id }, // Exclude the current request
+              status: { $ne: 'Accepted' }, // Exclude already accepted requests
+            },
+            { status: 'Rejected', updatedOn: new Date() }
+          );
+        }
+      }
 
-    // Additionally, provide response to the status update of the stray animal
-    res.json({
-      message: 'Updated stray animal status:',
-      strayAnimalStatus: strayAnimal.status,
-    })
-  })
+      // Respond with the updated adoption request status
+      const updateStatus = {
+        status: adoptionRequest.status,
+        _id: adoptionRequest._id,
+        updatedOn: adoptionRequest.updatedOn,
+      };
+
+      res.json({ message: 'Updated adoption request status:', updateStatus });
+      console.log(
+        'Updated adoption request status successfully by:',
+        loggedInUser.username
+      );
+      console.log('---------------------------------------------');
+      console.log('Updated adoption request status successfully:', adoptionRequest);
+    });
   } catch (error) {
-    console.error('Error updating adoption request status:', error)
-    res.status(500).json({ message: 'Error updating adoption request status' })
+    console.error('Error updating adoption request status:', error);
+    res.status(500).json({ message: 'Error updating adoption request status' });
   }
-}
+};
+
 
 
 // ----------------- GET animal post by Owner -------------------------------------------
@@ -884,7 +953,7 @@ const getAdoptionRequestsBysaId = async (req, res) => {
     // Find adoption requests for the specified stray animal ID
     const adoptionRequests = await AdoptionRequest.find({ animal: saId })
     .populate('requester', ' _id username name userAddress phoneNumber userPicture') // Populate requester field with specific fields
-    // .populate('animal') // Optional: populate animal field if needed
+    .populate('animal') // Optional: populate animal field if needed
     // .populate('owner') // Optional: populate owner field if needed
     .sort({ createdOn: -1 })
       // .sort({ createdOn: -1 })
@@ -903,6 +972,11 @@ const getAdoptionRequestsBysaId = async (req, res) => {
 
         // Format the response to include the desired fields
         const formattedResponse = adoptionRequests.map((request) => ({
+          animal: {
+            name: request.animal.name,
+            status: request.animal.status,
+            createdOn: request.animal.createdOn,
+          },
           requester: {
             reqId: request.requester._id,
             reqUsername: request.requester.username,
