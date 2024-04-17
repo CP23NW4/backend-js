@@ -766,7 +766,7 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
   try {
     // Retrieve the logged-in user's ID
     const loggedInUserId = req.user.userId
-
+    
     // Query adoption requests made by the logged-in user and populate the animal field
     const adoptionRequests = await AdoptionRequest.find({ requester: loggedInUserId })
       .sort({ createdOn: -1 })
@@ -791,16 +791,19 @@ const getAdoptionRequestsByLoggedInUser = async (req, res) => {
       const ownerUsername = animal.owner ? animal.owner.username : null
 
       return {
-        _id,
-        name,
-        picture,
-        type,
-        gender,
-        color,
-        description,
-        ownerUsername,
+        _id: request._id, // Show adoption request's _id
+        animal: {
+          _id,
+          name,
+          picture,
+          type,
+          gender,
+          color,
+          description,
+          ownerUsername,
+          createdOn,
+        },
         status,
-        createdOn,
       }
     })
 
