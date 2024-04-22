@@ -979,7 +979,7 @@ const getAdoptionRequestByIdForSender = async (req, res) => {
     const adoptionRequest = await AdoptionRequest.findById(reqId)
       .populate('animal') // Populate the stray animal details
       .populate('requester', 'username name userAddress phoneNumber userPicture') // Populate requester details
-      .populate('owner', 'username'); // Populate owner details
+      .populate('owner', 'username userPicture') // Populate owner details
 
     if (!adoptionRequest) {
       return res.status(404).json({ message: 'Adoption request not found' })
@@ -988,7 +988,10 @@ const getAdoptionRequestByIdForSender = async (req, res) => {
     // Prepare the response object
     const adoptionRequests = {
       // Stray animal information
-      ownerUsername: adoptionRequest.owner.username,
+      owner:{
+        ownerUsername: adoptionRequest.owner.username,
+        ownerPicture: adoptionRequest.owner.userPicture,
+      },
       animal: {
         name: adoptionRequest.animal.name,
         picture: adoptionRequest.animal.picture,
