@@ -315,7 +315,8 @@ const deleteStrayAnimal = async (req, res) => {
     const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
 
     const loggedInUserRole = loggedInUser.role
-    const loggedInUserId = loggedInUser._id.toString()
+    // const loggedInUserId = loggedInUser._id.toString()
+    const loggedInUserId = req.user.userId
 
     const existingStrayAnimal = await StrayAnimal.findById(req.params.saId)
 
@@ -325,19 +326,28 @@ const deleteStrayAnimal = async (req, res) => {
       return res.status(404).json({ message: 'Stray animal not found' })
     }
 
-    const existingStrayAnimalOwnerId = existingStrayAnimal.owner.ownerId
+    const existingStrayAnimalOwnerId = existingStrayAnimal.owner
     console.log('Logged-in user ID:', loggedInUserId)
 
     // Check if the authenticated user is an admin
+    // if (
+    //   loggedInUserRole !== 'admin' &&
+    //   loggedInUserRole !== loggedInUserId
+    // ) {
+    //   console.log('You are not authorized to delete this animal')
+    //   console.log('---------------------------------------------')
+    //   return res
+    //     .status(403)
+    //     .json({ message: 'You are not authorized to delete this animal' })
+    // }
+
+    // Check if the logged-in user is an admin or the owner of the stray animal post
     if (
-      loggedInUserRole !== 'admin' &&
-      existingStrayAnimalOwnerId !== loggedInUserId
-    ) {
-      console.log('You are not authorized to delete this animal')
-      console.log('---------------------------------------------')
-      return res
-        .status(403)
-        .json({ message: 'You are not authorized to delete this animal' })
+      req.user.role !== 'admin' && 
+      existingStrayAnimal.owner.toString() !== loggedInUserId
+  ) {
+      return res.status(403)
+      .json({ message: 'You are not authorized to delete this animal' })
     }
 
     const saId = req.params.saId
