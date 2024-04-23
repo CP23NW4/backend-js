@@ -357,6 +357,9 @@ const deleteStrayAnimal = async (req, res) => {
 
     const deletedStrayAnimal = await StrayAnimal.findByIdAndDelete(saId)
 
+    // Delete comments associated with the deleted stray animal
+    await Comment.deleteMany({ post: saId })
+
     res.json({ message: 'Stray animal deleted:', deletedStrayAnimal })
     console.log('Animal deleted by:', loggedInUser.username, deletedStrayAnimal)
     console.log('---------------------------------------------')
@@ -591,7 +594,7 @@ const requestAdoption = async (req, res) => {
     console.log('---------------------------------------------')
     res.status(500).json({ message: 'Unable to submit adoption request' })
   }
-};
+}
 
 
 // Helper function to check if a URL is external
@@ -650,37 +653,40 @@ function isExternalUrl(url) {
 const updateAdoptionRequestStatus = async (req, res) => {
   try {
     // Retrieve the logged-in user's data
-    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req);
+    const loggedInUser = await loggedInUserService.getLoggedInUserDataNoRes(req)
     // const loggedInUserRole = loggedInUser.role;
 
     // Call the validation function
     validate(req, res, async () => {
       // Fetch the adoption request by ID
-      const adoptionRequest = await AdoptionRequest.findById(req.params.reqId);
+      const adoptionRequest = await AdoptionRequest.findById(req.params.reqId)
 
       if (!adoptionRequest) {
-        return res.status(404).json({ message: 'Adoption request not found' });
+        return res.status(404).json({ message: 'Adoption request not found' })
       }
 
       // Check if the logged-in user has permission to edit the status
       if (
         adoptionRequest.owner.toString() !== loggedInUser._id.toString()
       ) {
-        return res.status(403).json({ message: 'You are not authorized to edit the status of this adoption request' });
+        return res.status(403).json
+        ({ 
+          message: 'You are not authorized to edit the status of this adoption request' 
+        })
       }
 
       // Update the status of the adoption request
-      const newStatus = req.body.status;
-      adoptionRequest.status = newStatus;
-      adoptionRequest.updatedOn = new Date();
-      await adoptionRequest.save();
+      const newStatus = req.body.status
+      adoptionRequest.status = newStatus
+      adoptionRequest.updatedOn = new Date()
+      await adoptionRequest.save()
 
       if (newStatus === 'Accepted') {
         // If the adoption request status is "Accepted," update the stray animal status to "Unavailable"
-        const strayAnimal = await StrayAnimal.findById(adoptionRequest.animal);
+        const strayAnimal = await StrayAnimal.findById(adoptionRequest.animal)
         if (strayAnimal) {
-          strayAnimal.status = 'Unavailable';
-          await strayAnimal.save();
+          strayAnimal.status = 'Unavailable'
+          await strayAnimal.save()
 
           // Reject all other adoption requests for the same stray animal
           await AdoptionRequest.updateMany(
@@ -690,7 +696,7 @@ const updateAdoptionRequestStatus = async (req, res) => {
               status: { $ne: 'Accepted' }, // Exclude already accepted requests
             },
             { status: 'Rejected', updatedOn: new Date() }
-          );
+          )
         }
       }
 
@@ -699,22 +705,21 @@ const updateAdoptionRequestStatus = async (req, res) => {
         status: adoptionRequest.status,
         _id: adoptionRequest._id,
         updatedOn: adoptionRequest.updatedOn,
-      };
+      }
 
-      res.json({ message: 'Updated adoption request status:', updateStatus });
+      res.json({ message: 'Updated adoption request status:', updateStatus })
       console.log(
         'Updated adoption request status successfully by:',
         loggedInUser.username
-      );
-      console.log('---------------------------------------------');
-      console.log('Updated adoption request status successfully:', adoptionRequest);
-    });
+      )
+      console.log('---------------------------------------------')
+      console.log('Updated adoption request status successfully:', adoptionRequest)
+    })
   } catch (error) {
-    console.error('Error updating adoption request status:', error);
-    res.status(500).json({ message: 'Error updating adoption request status' });
+    console.error('Error updating adoption request status:', error)
+    res.status(500).json({ message: 'Error updating adoption request status' })
   }
-};
-
+}
 
 
 // ----------------- GET animal post by Owner -------------------------------------------

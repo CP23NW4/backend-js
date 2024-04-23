@@ -1,5 +1,4 @@
 // StrayAnimal.js file defines the Mongoose model for the Stray Animal schema.
-
 const mongoose = require('mongoose')
 
 const strayAnimalSchema = new mongoose.Schema({
