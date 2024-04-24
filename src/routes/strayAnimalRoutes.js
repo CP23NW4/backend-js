@@ -8,8 +8,6 @@ const upload = multer()
 const strayAnimalController = require('../controllers/strayAnimalController')
 const { authenticateUser } = require('../middlewares/userAuthMiddleware')
 
-// const { getDogStrayAnimals } = require('./controllers/strayAnimalController')
-
 // ----------------- Get all stray animals ----------------------------------------------
 router.get('/all', strayAnimalController.getAllStrayAnimals)
 
@@ -31,6 +29,7 @@ router.post(
       .notEmpty()
       .withMessage('Name is required')
       .isLength({ min: 1, max: 20 })
+      .withMessage('Name must be less than 20 characters')
       .matches(/^[\u0E00-\u0E7F\sA-Za-z0-9]+$/),
     body('type')
       .notEmpty()
@@ -124,13 +123,6 @@ router.get(
   strayAnimalController.getAdoptionRequestsByLoggedInUser
 )
 
-// // ----------------- GET adoption requests by owners (Receiver) ------------
-// router.get(
-//   '/receiver/reqAdoption',
-//   authenticateUser,
-//   strayAnimalController.getOwnersAdoptionRequestsByLoggedInUser
-// )
-
 // ----------------- Get adoption requests filter by ID stray animal post ---------------------
 router.get(
   '/receiver/:saId/reqAdoption',
@@ -150,14 +142,6 @@ router.put(
   .withMessage('Status must be On Request, Accepted or Rejected'), 
   authenticateUser, 
   strayAnimalController.updateAdoptionRequestStatus)
-
-
-// // ----------------- GET adoption requests form (Receiver) by ID --------------------------
-// router.get(
-//   '/receiver/reqAdoption/:reqId',
-//   authenticateUser,
-//   strayAnimalController.getAdoptionRequestById
-// )
 
 // ----------------- GET adoption requests form (Sender) by ID --------------------------
 router.get(
@@ -183,17 +167,6 @@ router.get(
   '/:saId/comments',
   strayAnimalController.getComments
 )
-
-// ----------------- Edit comment by ID -------------------------- 
-// router.put(
-//   '/:saId/comment/:commentId',
-//   body('text')
-//   .optional()
-//   .isLength({ max: 200 })
-//   .withMessage('Comment must be less than 200 characters'),
-//   authenticateUser,
-//   strayAnimalController.updateComment
-// )
 
 // ----------------- Delete comment by ID --------------------------
 router.delete(

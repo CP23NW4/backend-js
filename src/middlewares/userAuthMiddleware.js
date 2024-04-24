@@ -9,7 +9,7 @@ function authenticateUser(req, res, next) {
 
   // Check if token exists
   if (!token) {
-    return res.status(401).json({ message: 'Unauthorized: Token not provided' });
+    return res.status(401).json({ message: 'Unauthorized: Token not provided' })
   }
 
   try {
@@ -18,10 +18,10 @@ function authenticateUser(req, res, next) {
     req.user = decoded; // Attach user information to the request object
     next(); // Proceed to the next middleware
   } catch (error) {
-    return res.status(401).json({ message: 'Unauthorized: Invalid token' });
+    return res.status(401).json({ message: 'Unauthorized: Invalid token' })
   }
 }
   
   module.exports = {
     authenticateUser,
-  };
+  }

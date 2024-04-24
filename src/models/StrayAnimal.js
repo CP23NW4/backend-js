@@ -19,17 +19,6 @@ const strayAnimalSchema = new mongoose.Schema({
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    // ownerId: String, 
-    // ownerUsername: String, //เอา
-    // ownerPicture: String,
-    // phoneNumber: String,
-    // role: String,
-    // ownerAddress: {  //เอา
-    //   PostCode: Number,
-    //   TambonThaiShort: String,
-    //   DistrictThaiShort: String,
-    //   ProvinceThai: String,
-    // },
   },
   createdOn: Date,
   updatedOn: Date,
