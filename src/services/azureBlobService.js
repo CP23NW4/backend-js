@@ -27,18 +27,6 @@ async function uploadImageToBlob(req, containerName, additionalInfo = {}) {
   return imageUrl
 }
 
-// Add more functions for retrieving/deleting images as needed
-
-// async function getImageFromBlob(fileName, containerName) {
-//   // Get the container client dynamically based on the provided containerName
-//   const containerClient = blobServiceClient.getContainerClient(containerName);
-
-//   const blockBlobClient = containerClient.getBlockBlobClient(fileName);
-//   const downloadBlockBlobResponse = await blockBlobClient.download(0);
-//   const data = await streamToBuffer(downloadBlockBlobResponse.readableStreamBody);
-//   return data;
-// }
-
 // Helper function to convert stream to buffer
 function streamToBuffer(readableStream) {
   return new Promise((resolve, reject) => {
@@ -55,6 +43,4 @@ function streamToBuffer(readableStream) {
 
 module.exports = {
   uploadImageToBlob,
-  // getImageFromBlob,
-  // export other functions if needed
 }

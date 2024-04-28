@@ -3,11 +3,11 @@ const crypto = require('crypto')
 require('dotenv').config({ path: '../.env' })
 
 function generateVerificationToken() {
-  return crypto.randomBytes(20).toString("hex");
+  return crypto.randomBytes(20).toString("hex")
 }
 
 // Step 2: Send Verification Email
-const nodemailer = require("nodemailer");
+const nodemailer = require("nodemailer")
 
 const transporter = nodemailer.createTransport({
   // configure email service
@@ -40,9 +40,9 @@ async function sendVerificationEmail(email, verificationToken) {
   <p><center>If this wasn't you, please <u href="#" style="color: orange;">Click here.</u></center></p>
   </div>
   `,
-  };
+  }
 
-  await transporter.sendMail(mailOptions);
+  await transporter.sendMail(mailOptions)
 }
 
 module.exports = {

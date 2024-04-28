@@ -1,5 +1,4 @@
 // StrayAnimal.js file defines the Mongoose model for the Stray Animal schema.
-
 const mongoose = require('mongoose')
 
 const strayAnimalSchema = new mongoose.Schema({
@@ -18,17 +17,8 @@ const strayAnimalSchema = new mongoose.Schema({
     default: 'Available',
   },
   owner: {
-    ownerId: String,
-    ownerUsername: String,
-    ownerPicture: String,
-    phoneNumber: String,
-    role: String,
-    ownerAddress: {
-      PostCode: Number,
-      TambonThaiShort: String,
-      DistrictThaiShort: String,
-      ProvinceThai: String,
-    },
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
   },
   createdOn: Date,
   updatedOn: Date,

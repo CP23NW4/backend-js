@@ -242,9 +242,6 @@ async function verifyUser(req, res) {
     if (!userRegistrationData || (Date.now() - userRegistrationData.createdOn.getTime()) > 30 * 60 * 1000) {
       console.log('User registration data not found, already verified or expired token')
       console.log('---------------------------------------------')
-      // return res.status(404).json({
-      //   message: 'User registration data not found, already verified or expired token',
-      // })
       return res.status(404).send(htmlResError)
     }
 
@@ -301,9 +298,6 @@ async function verifyUser(req, res) {
     </div>
     `
 
-    // res
-    //   .status(200)
-    //   .json({ message: 'User email verified successfully!', user: newUser })
     res.status(200).send(htmlResVerified)
     console.log(`User ${newUser.email} confirmed registration.`, newUser)
     console.log('---------------------------------------------')
@@ -350,11 +344,7 @@ async function loginUser(req, res) {
       userId: user._id.toString(),
       username: user.username,
       email: user.email,
-      phoneNumber: user.phoneNumber,
-      DOB: user.DOB,
       role: user.role,
-      userAddress: user.userAddress,
-      userPicture: user.userPicture,
     }
 
     const token = jwt.sign(tokenPayload, secretKey, { expiresIn: '1h' })
@@ -375,32 +365,6 @@ async function getAllUsers(req, res) {
     const users = await User.find()
     res.json(users)
     console.log('All users:', users)
-    console.log('---------------------------------------------')
-  } catch (err) {
-    console.log(err)
-    console.log('---------------------------------------------')
-    res.status(500).json({ message: err.message })
-  }
-}
-
-// ----------------- Get user by ID -------------------------------------------
-async function getUserById(req, res) {
-  try {
-    // Call getLoggedInUserDataNoRes to retrieve logged-in user's data
-    await loggedInUserService.getLoggedInUserDataNoRes(req)
-
-    // Fetch user data from the database using the provided userId
-    const user = await User.findById(req.params.userId)
-
-    if (!user) {
-      console.log('User not found')
-      console.log('---------------------------------------------')
-      return res.status(404).json({ message: 'User not found' })
-    }
-
-    // Send the user data in the response
-    res.json({ user })
-    console.log('Requested user:', user)
     console.log('---------------------------------------------')
   } catch (err) {
     console.log(err)
@@ -649,10 +613,8 @@ module.exports = {
   registerUser,
   loginUser,
   getAllUsers,
-  getUserById,
   deleteUserById,
   editUserById,
-  // getLoggedInUserData,
   editLoggedInUser,
   deleteLoggedInUser,
   verifyUser,

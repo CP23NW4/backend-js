@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
   },
   password: String,
   phoneNumber: String,
-  DOB: Date,
+  DOB: Number,
   role: {
     type: String,
     default: 'general',

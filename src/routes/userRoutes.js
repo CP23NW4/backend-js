@@ -108,7 +108,6 @@ const isAgeValid = async (value) => {
 // ----------------- User registration ------------------------------------------
 router.post(
   '/register',
-  // upload.none(),
   upload.single('userPicture'),
   [
     // Validate name
@@ -183,8 +182,10 @@ router.post(
     body('DOB')
       .notEmpty()
       .withMessage('Date of birth is required')
-      .isISO8601()
-      .withMessage('Invalid date of birth format')
+      .isNumeric()
+      .withMessage('Date of birth should contain only years')
+      .isLength({ max: 4 })
+      .withMessage('Year of birth must be 4 digits')
       .custom(isAgeValid), // Using the custom validation function
 
     // Validate idCard
@@ -196,9 +197,6 @@ router.post(
       .isLength({ min: 13, max: 13 })
       .withMessage('ID card must be 13 digits')
       .custom(isIdCardValidate), // Using the validation function
-
-    // Validate userPicture
-    // body('userPicture').optional(),
 
     // Validate userAddress
     body('userAddress.PostCode')
@@ -233,9 +231,6 @@ router.post('/login', upload.none(), userController.loginUser)
 
 //----------------- Get all users ---------------------------------------------
 router.get('/', authenticateUser, userController.getAllUsers)
-
-// ----------------- Get user by ID -------------------------------------------
-router.get('/:userId', authenticateUser, userController.getUserById)
 
 // ----------------- Delete user by ID (Admin only) ----------------------------
 router.delete('/:userId', authenticateUser, userController.deleteUserById)
@@ -352,7 +347,6 @@ router.put(
 
 // ----------------- Delete logged-in user data -------------------------------
 router.delete('/', authenticateUser, userController.deleteLoggedInUser)
-
 
 // ----------------- Email verification ---------------------------------------
 router.get('/verify/:token', userController.verifyUser)
